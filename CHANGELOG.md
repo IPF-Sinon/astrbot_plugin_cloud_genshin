@@ -1,5 +1,13 @@
 # 🎊 好想玩云原神🎊 更新日志
 
+## [1.5.1] - 2026-06-07
+
+### 🐛 修复
+- **管理命令 async_generator 错误**：将 `_handle_keyword_admin` 和 `_handle_blacklist_admin` 从异步生成器（yield）重构为纯 async 函数（await event.send()），修复 `TypeError: object async_generator can't be used in 'await' expression`
+
+### 🔧 变更
+- 版本号更新至 1.5.1
+
 ## [1.5.0] - 2026-06-07
 
 ### 📝 新增
