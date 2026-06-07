@@ -261,12 +261,14 @@ class Main(Star):
 
         # ============= 关键词管理 =============
         if subcmd in ("add", "remove", "list"):
-            await self._handle_keyword_admin(event, subcmd, parts)
+            async for ret in self._handle_keyword_admin(event, subcmd, parts):
+                yield ret
             return
 
         # ============= 群组黑/白名单管理 =============
         if subcmd == "blacklist":
-            await self._handle_blacklist_admin(event, parts)
+            async for ret in self._handle_blacklist_admin(event, parts):
+                yield ret
             return
 
         yield event.plain_result(f"❌ 未知子命令: {subcmd}，可用: add / remove / list / blacklist")
