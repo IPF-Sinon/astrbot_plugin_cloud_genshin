@@ -1,0 +1,33 @@
+{
+  "enable_keyword_trigger": {
+    "description": "是否启用关键词自动触发",
+    "type": "bool",
+    "hint": "关闭后只有手动输入 /云原神 才会回复",
+    "default": true
+  },
+  "trigger_keywords": {
+    "description": "触发关键词列表（所有关键词合并，可自由增删）",
+    "type": "list",
+    "hint": "消息中含有列表中的任意词就会触发。默认含'云朵'、'云原神'",
+    "default": ["云朵", "云原神"]
+  },
+  "reply_delay_ms": {
+    "description": "触发后延迟毫秒数",
+    "type": "int",
+    "hint": "发送完'欸，云朵'后等待多少毫秒再发梗段，建议500~2000",
+    "default": 800
+  },
+  "blacklist_mode": {
+    "description": "群聊黑名单模式",
+    "type": "string",
+    "hint": "仅黑名单中的群聊不触发（blacklist）/ 仅白名单中的群聊触发（whitelist）",
+    "default": "blacklist",
+    "options": ["blacklist", "whitelist"]
+  },
+  "blacklist_groups": {
+    "description": "群组黑/白名单列表",
+    "type": "list",
+    "hint": "填入群聊ID（字符串格式），黑名单模式下这些群不触发，白名单模式下仅这些群触发",
+    "default": []
+  }
+}
