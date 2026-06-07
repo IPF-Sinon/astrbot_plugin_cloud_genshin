@@ -1,2 +1,6 @@
-name:好想玩云原神🎊author:极夜Systemdesc:自动检测「云朵」「云原神」等关键词并回复经典云原神梗，内置11段随机变体，支持手动指令、关键词管理、群聊黑/白名单。
-version:1.5.0repo: https://github.com/IPF-Sinon/astrbot_plugin_cloud_genshin
+name: astrbot_plugin_cloud_genshin
+author: 极夜System
+display_name: 好想玩云原神🎊
+description: 🎊「好想玩云原神🎊」— 云原神梗插件，支持关键词自动触发与手动命令，内置11段随机变体不刷屏，支持群聊黑名单与关键词管理
+version: 1.5.0
+repo: https://github.com/IPF-Sinon/astrbot_plugin_cloud_genshin
