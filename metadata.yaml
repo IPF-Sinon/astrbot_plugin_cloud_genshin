@@ -1,0 +1,6 @@
+name: astrbot_plugin_cloud_genshin
+author: 极夜System
+display_name: 好想玩云原神🎊
+description: 🎊「好想玩云原神🎊」— 云原神梗插件，支持关键词自动触发与手动命令，内置11段随机变体不刷屏，支持群聊黑名单与关键词管理
+version: 1.4.0
+repo: https://github.com/IPF-Sinon/astrbot_plugin_cloud_genshin
