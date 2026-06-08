@@ -10,7 +10,7 @@ from astrbot.api.message_components import Plain
 
 
 class Main(Star):
-    """🎊 好想玩云原神🎊 — 关键词自动触发 + 手动命令，可配置梗段词库 + 群聊黑名单"""
+    """🎊 好想玩云原神🎊 v2.0 — 全功能可配置云原神梗插件"""
 
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
@@ -19,79 +19,98 @@ class Main(Star):
         # ====== 数据持久化目录 ======
         data_dir = StarTools.get_data_dir()
         self.plugin_data_dir = os.path.join(data_dir, "astrbot_plugin_cloud_genshin")
-        self.keywords_file = os.path.join(self.plugin_data_dir, "custom_keywords.json")
-        self.blacklist_file = os.path.join(self.plugin_data_dir, "custom_blacklist.json")
+        self.data_file = os.path.join(self.plugin_data_dir, "data.json")
 
-        # ====== 加载持久化数据 ======
-        self.custom_keywords = self._load_json_list(self.keywords_file)
-        self.custom_blacklist = self._load_json_list(self.blacklist_file)
+        # ====== 初始化数据（从持久化加载，不存在则从配置获取默认值） ======
+        self.data = self._load_data()
 
+        # 启动日志
+        kw_count = len(self.data.get("trigger_keywords", []))
+        qp_count = len(self.data.get("quote_pool", []))
+        bl_count = len(self.data.get("blacklist_groups", []))
         mode = self.config.get("blacklist_mode", "blacklist")
-        config_groups = self.config.get("blacklist_groups", [])
-        if not isinstance(config_groups, list):
-            config_groups = []
-        total_blacklisted = len(set(
-            str(g) for g in config_groups + self.custom_blacklist
-        ))
-
-        quotes = self.config.get("quote_pool", [])
-        if not isinstance(quotes, list):
-            quotes = []
         logger.info(
-            f"🎊 好想玩云原神🎊 已加载 | "
-            f"梗段池: {len(quotes)}段 | "
-            f"自定义关键词: {len(self.custom_keywords)}个 | "
+            f"🎊 好想玩云原神🎊 v2.0 已加载 | "
+            f"梗段池: {qp_count}段 | "
+            f"关键词: {kw_count}个 | "
             f"关键词触发: {'开' if self.config.get('enable_keyword_trigger', True) else '关'} | "
-            f"黑名单模式: {mode} (共{total_blacklisted}个群)"
+            f"黑名单模式: {mode} (共{bl_count}个群)"
         )
 
     # ==================== 持久化方法 ====================
 
-    def _load_json_list(self, filepath: str) -> list:
-        """从 JSON 文件加载字符串列表"""
+    def _load_data(self) -> dict:
+        """
+        加载持久化数据 data.json。
+        如果文件存在则读取，否则从配置（_conf_schema.json）获取默认值并保存。
+        """
+        # 默认值模板（从配置获取）
+        default_data = {
+            "trigger_keywords": self.config.get("trigger_keywords", ["云朵", "云原神"]),
+            "first_reply": str(self.config.get("first_reply", "欸，云朵") or "欸，云朵"),
+            "quote_pool": self.config.get("quote_pool", [
+                "啊😲？云朵☁️😄，哒↘哒↗哒↘哒↗哒↘，好想玩原神😨，云☁️原神😙",
+                "当当当当当😊，看精彩纷纷👍🎊😆，云☁️原神😄，呜呜呜呜呜，好想玩原神😭😭😭云☁️原神",
+                "朋友已就位😊😃😆，一起玩原神，云☁️原神！啊啊啊啊啊😙，好想玩原神😙云☁️原神，哈哈哈哈哈🤣🤣🤣，一起玩原神",
+                "云☁️原神，好好好想，🤩想玩玩原神😋网页云端，低功耗不失真😌，WiFi网线🥰，都可以60帧😍",
+                "来来来来👏，进入云☁️原神",
+                "空间快爆炸，好想玩原神～✌🏻😀 / 云原神！",
+                "进度软趴趴，好想玩原神～😀👌🏻 / 云原神！",
+                "潜入了深海，想玩原神～🥴👍🏻 / 云原神！",
+                "冲出了云层，也想玩原神！✌🏻🤪 / 云原神！！！",
+                "低延迟高像素，随时玩原神～😤👌🏻 / 云原神！",
+                "小体积大用处，快快玩原神～🙄🤚🏻 / 云原神！/ 好 好 好想，"
+            ]),
+            "blacklist_groups": self.config.get("blacklist_groups", [])
+        }
+
+        # 确保类型正确
+        if not isinstance(default_data["trigger_keywords"], list):
+            default_data["trigger_keywords"] = ["云朵", "云原神"]
+        if not isinstance(default_data["quote_pool"], list):
+            default_data["quote_pool"] = []
+        if not isinstance(default_data["blacklist_groups"], list):
+            default_data["blacklist_groups"] = []
+
+        # 尝试从持久化文件加载
         try:
-            os.makedirs(os.path.dirname(filepath), exist_ok=True)
-            if os.path.exists(filepath):
-                with open(filepath, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    if isinstance(data, list) and all(isinstance(k, str) for k in data):
-                        return data
+            os.makedirs(os.path.dirname(self.data_file), exist_ok=True)
+            if os.path.exists(self.data_file):
+                with open(self.data_file, "r", encoding="utf-8") as f:
+                    saved = json.load(f)
+                    if isinstance(saved, dict):
+                        # 用持久化值覆盖默认值（保留已有字段）
+                        for key in default_data:
+                            if key in saved and saved[key] is not None:
+                                default_data[key] = saved[key]
+                        logger.info(f"🎊 从持久化文件加载配置成功")
         except Exception as e:
-            logger.error(f"加载文件失败 {filepath}: {e}")
-        return []
+            logger.error(f"🎊 加载持久化文件失败: {e}")
 
-    def _save_json_list(self, filepath: str, data: list):
-        """将字符串列表写入 JSON 文件"""
+        # 确保数组类型
+        for key in ("trigger_keywords", "quote_pool", "blacklist_groups"):
+            if not isinstance(default_data.get(key), list):
+                default_data[key] = []
+
+        return default_data
+
+    def _save_data(self):
+        """将当前数据持久化到 data.json"""
         try:
-            os.makedirs(os.path.dirname(filepath), exist_ok=True)
-            with open(filepath, "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
+            os.makedirs(os.path.dirname(self.data_file), exist_ok=True)
+            with open(self.data_file, "w", encoding="utf-8") as f:
+                json.dump(self.data, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            logger.error(f"保存文件失败 {filepath}: {e}")
-
-    def _save_keywords(self):
-        """保存自定义关键词"""
-        self._save_json_list(self.keywords_file, self.custom_keywords)
-
-    def _save_blacklist(self):
-        """保存自定义黑名单"""
-        self._save_json_list(self.blacklist_file, self.custom_blacklist)
+            logger.error(f"🎊 保存持久化数据失败: {e}")
 
     # ==================== 核心方法 ====================
 
     def _get_random_quote(self) -> str:
-        """从配置的梗段词库中随机取一段"""
-        quotes = self.config.get("quote_pool", [])
+        """从梗段词库中随机取一段"""
+        quotes = self.data.get("quote_pool", [])
         if not isinstance(quotes, list) or not quotes:
             return "啊😲？云朵☁️😄，好想玩原神😨……"
         return random.choice(quotes)
-
-    def _get_all_keywords(self) -> list:
-        """合并 trigger_keywords（配置项） + custom_keywords（持久化），去重"""
-        trigger = self.config.get("trigger_keywords", ["云朵", "云原神"])
-        if not isinstance(trigger, list):
-            trigger = ["云朵", "云原神"]
-        return list(set(trigger + self.custom_keywords))
 
     def _is_group_blocked(self, event: AstrMessageEvent) -> bool:
         """
@@ -105,18 +124,16 @@ class Main(Star):
             return False  # 私聊不屏蔽
 
         mode = self.config.get("blacklist_mode", "blacklist")
-        config_groups = self.config.get("blacklist_groups", [])
-        if not isinstance(config_groups, list):
-            config_groups = []
 
-        # 合并配置中的群ID + 通过管理命令添加的持久化群ID
-        all_groups = set(str(g) for g in config_groups + self.custom_blacklist)
+        # 从持久化数据中读取群列表
+        all_groups = self.data.get("blacklist_groups", [])
+        if not isinstance(all_groups, list):
+            all_groups = []
+        all_groups = set(str(g) for g in all_groups)
 
         if mode == "blacklist":
-            # 黑名单模式：在名单中 → 屏蔽
             return str(group_id) in all_groups
         else:
-            # 白名单模式：不在名单中 → 屏蔽
             return str(group_id) not in all_groups
 
     # ==================== 关键词自动触发 ====================
@@ -126,25 +143,21 @@ class Main(Star):
         """
         监听所有消息 — 检测到关键词时自动回复。
 
-        架构说明：完全放弃事件生成器内复杂逻辑
-        ① 不依赖 event.message_obj/raw_message（各平台类型不同易崩）
-        ② 只用 event.message_str + str() 保底，永绝 None.strip()
-        ③ 通过"精确匹配命令关键字"过滤掉 /云原神 /cloudys /云原神管理
-        ④ create_task 在 yield 前，保证后台任务被事件循环调度
+        架构说明：
+        ① 只用 event.message_str，永不为 None
+        ② 过滤命令消息：/云原神管理、/cloudys 跳过，但 /云原神 保留触发
+        ③ create_task 在 yield 前，保证后台任务被事件循环调度
         """
         # ① 检查是否启用关键词触发
         if not self.config.get("enable_keyword_trigger", True):
             return
 
-        # ② 获取消息文本。只用 event.message_str，永不为 None
+        # ② 获取消息文本
         text = str(event.message_str or "").strip()
         if not text:
             return
 
-        # ③ 过滤命令消息：框架去掉 "/" 后，
-        #     /云原神管理 → "云原神管理..."，需要跳过（有 @filter.command 路由）
-        #     /cloudys → "cloudys"，需要跳过
-        #     /云原神 → "云原神"，这是用户想要的关键词，不能跳过！要保留让它触发
+        # ③ 过滤命令消息
         if text.startswith("云原神管理") or text == "cloudys":
             logger.debug(f"🎊 跳过命令消息: '{text}'")
             return
@@ -155,7 +168,9 @@ class Main(Star):
             return
 
         # ⑤ 关键词匹配
-        keywords = self._get_all_keywords()
+        keywords = self.data.get("trigger_keywords", [])
+        if not isinstance(keywords, list):
+            keywords = []
         matched_kw = None
         for kw in keywords:
             if kw in text:
@@ -173,18 +188,17 @@ class Main(Star):
 
         event.stop_event()
 
-        # ⑥ 创建后台协程延迟发送梗段（传 event 用 event.send() 发送）
-        #     create_task 在 yield 前保证被事件循环调度
+        # ⑥ 创建后台协程延迟发送梗段
         delay_ms = self.config.get("reply_delay_ms", 800)
         quote = self._get_random_quote()
         asyncio.create_task(self._delayed_send(event, quote, delay_ms))
 
-        # ⑦ 第一条用 yield 发送首次回复词（从配置读取）
-        first_reply = str(self.config.get("first_reply", "欸，云朵") or "欸，云朵")
+        # ⑦ 第一条用 yield 发送首次回复词
+        first_reply = str(self.data.get("first_reply", "欸，云朵") or "欸，云朵")
         yield event.plain_result(first_reply)
 
     async def _delayed_send(self, event: AstrMessageEvent, quote: str, delay_ms: int):
-        """后台延迟发送梗段（用 event.send 发送，脱离生成器生命周期）"""
+        """后台延迟发送梗段"""
         try:
             await asyncio.sleep(delay_ms / 1000.0)
             await event.send(event.plain_result(quote))
@@ -214,27 +228,33 @@ class Main(Star):
     @filter.permission_type(filter.PermissionType.ADMIN)
     async def cmd_admin(self, event: AstrMessageEvent):
         """
-        云原神管理命令
+        云原神管理命令 v2.0
         用法：
-          /云原神管理 add <关键词>            — 添加自定义触发关键词
-          /云原神管理 remove <关键词>         — 删除自定义触发关键词
-          /云原神管理 list                   — 列出所有当前关键词
-          /云原神管理 blacklist add <群号>    — 添加群到黑/白名单
-          /云原神管理 blacklist remove <群号> — 从黑/白名单移除群
-          /云原神管理 blacklist list          — 列出黑/白名单中的群
+          /云原神管理 add <关键词>                  — 添加触发关键词
+          /云原神管理 remove <关键词>               — 删除触发关键词
+          /云原神管理 list                         — 列出所有触发关键词
+          /云原神管理 first_reply <文本>             — 设置首次回复词
+          /云原神管理 quote list                    — 列出所有梗段
+          /云原神管理 quote add <梗段>              — 添加梗段
+          /云原神管理 quote remove <编号>           — 删除指定编号的梗段
+          /云原神管理 quote set <编号> <新内容>      — 修改指定编号的梗段
+          /云原神管理 blacklist add <群号>           — 添加群到黑/白名单
+          /云原神管理 blacklist remove <群号>        — 从黑/白名单移除群
+          /云原神管理 blacklist list                 — 列出黑/白名单中的群
         """
         text = (event.message_str or "").strip()
         parts = text.split(maxsplit=2)
 
         if len(parts) < 2:
             yield event.plain_result(
-                "📋 好想玩云原神🎊 管理命令：\n"
-                "  /云原神管理 add <关键词>                  — 添加关键词\n"
-                "  /云原神管理 remove <关键词>               — 删除关键词\n"
-                "  /云原神管理 list                         — 列出关键词\n"
-                "  /云原神管理 blacklist add <群号>          — 添加群到黑/白名单\n"
-                "  /云原神管理 blacklist remove <群号>       — 从黑/白名单移除群\n"
-                "  /云原神管理 blacklist list                — 列出黑/白名单群"
+                "📋 好想玩云原神🎊 v2.0 管理命令：\n"
+                "  /云原神管理 add <关键词>                    — 添加关键词\n"
+                "  /云原神管理 remove <关键词>                 — 删除关键词\n"
+                "  /云原神管理 list                           — 列出关键词\n"
+                "  /云原神管理 first_reply <文本>              — 设首次回复词\n"
+                "  /云原神管理 quote add/remove/list/set       — 管理梗段词库\n"
+                "  /云原神管理 blacklist add/remove/list       — 管理群名单\n"
+                "  /云原神管理 status                         — 查看当前状态"
             )
             return
 
@@ -245,34 +265,55 @@ class Main(Star):
             await self._handle_keyword_admin(event, subcmd, parts)
             return
 
+        # ============= 首次回复词管理 =============
+        if subcmd == "first_reply":
+            await self._handle_first_reply_admin(event, parts)
+            return
+
+        # ============= 梗段词库管理 =============
+        if subcmd == "quote":
+            await self._handle_quote_admin(event, parts)
+            return
+
         # ============= 群组黑/白名单管理 =============
         if subcmd == "blacklist":
             await self._handle_blacklist_admin(event, parts)
             return
 
-        yield event.plain_result(f"❌ 未知子命令: {subcmd}，可用: add / remove / list / blacklist")
+        # ============= 状态查看 =============
+        if subcmd == "status":
+            await self._handle_status(event)
+            return
+
+        yield event.plain_result(
+            f"❌ 未知子命令: {subcmd}，可用: add / remove / list / first_reply / quote / blacklist / status"
+        )
 
     # ==================== 关键词管理子逻辑 ====================
 
     async def _handle_keyword_admin(self, event: AstrMessageEvent, subcmd: str, parts: list):
-        """处理关键词的添加/删除/列出"""
+        """处理关键词的添加/删除/列出（统一操作持久化数据中的 trigger_keywords）"""
+        keywords = self.data.get("trigger_keywords", [])
+        if not isinstance(keywords, list):
+            keywords = []
+            self.data["trigger_keywords"] = keywords
+
         if subcmd == "add":
             if len(parts) < 3 or not parts[2].strip():
                 await event.send(event.plain_result("❌ 用法：/云原神管理 add <关键词>"))
                 return
             keyword = parts[2].strip()
 
-            # 检查是否已在任意关键词源中存在
-            all_kw = self._get_all_keywords()
-            if keyword in all_kw:
-                await event.send(event.plain_result(f"⚠️ 关键词「{keyword}」已存在（可在管理面板或 list 查看来源）"))
+            if keyword in keywords:
+                await event.send(event.plain_result(f"⚠️ 关键词「{keyword}」已存在"))
                 return
 
-            self.custom_keywords.append(keyword)
-            self._save_keywords()
+            keywords.append(keyword)
+            self.data["trigger_keywords"] = keywords
+            self._save_data()
             await event.send(event.plain_result(
                 f"✅ 已添加关键词「{keyword}」\n"
-                f"当前共 {len(self.custom_keywords)} 个持久化自定义关键词"
+                f"当前共 {len(keywords)} 个关键词"
             ))
 
         elif subcmd == "remove":
@@ -281,61 +322,177 @@ class Main(Star):
                 return
             keyword = parts[2].strip()
 
-            # 检查是否在持久化自定义关键词中
-            if keyword in self.custom_keywords:
-                self.custom_keywords.remove(keyword)
-                self._save_keywords()
+            if keyword in keywords:
+                keywords.remove(keyword)
+                self.data["trigger_keywords"] = keywords
+                self._save_data()
                 await event.send(event.plain_result(
-                    f"✅ 已从持久化自定义关键词中删除「{keyword}」\n"
-                    f"剩余 {len(self.custom_keywords)} 个持久化自定义关键词"
+                    f"✅ 已删除关键词「{keyword}」\n"
+                    f"剩余 {len(keywords)} 个关键词"
                 ))
-                return
-
-            # 检查是否在 trigger_keywords 配置中
-            trigger = self.config.get("trigger_keywords", [])
-            if not isinstance(trigger, list):
-                trigger = []
-            if keyword in trigger:
-                await event.send(event.plain_result(
-                    f"💡 「{keyword}」在管理面板的 trigger_keywords 配置中，"
-                    f"请到 AstrBot 管理面板 → 插件配置 → 好想玩云原神🎊 → "
-                    f"trigger_keywords 中编辑移除"
-                ))
-                return
-
-            await event.send(event.plain_result(f"❌ 未在任何关键词源中找到「{keyword}」"))
+            else:
+                await event.send(event.plain_result(f"❌ 未找到关键词「{keyword}」"))
 
         elif subcmd == "list":
-            trigger = self.config.get("trigger_keywords", ["云朵", "云原神"])
-            if not isinstance(trigger, list):
-                trigger = ["云朵", "云原神"]
-
             lines = ["📋 好想玩云原神🎊 触发关键词列表：\n"]
-
-            lines.append("🔵 配置关键词（来源 _conf_schema.json → trigger_keywords）：")
-            if trigger:
-                for kw in trigger:
-                    lines.append(f"   • {kw}")
-                lines.append("   💡 可到管理面板编辑增删")
+            if keywords:
+                for i, kw in enumerate(keywords, 1):
+                    lines.append(f"  {i}. {kw}")
             else:
-                lines.append("   （空）")
+                lines.append("  （暂无关键词，可用 add <关键词> 添加）")
 
-            if self.custom_keywords:
-                lines.append("\n🟡 持久化自定义关键词（可通过管理命令增删）：")
-                for i, kw in enumerate(self.custom_keywords, 1):
-                    lines.append(f"   {i}. {kw}")
-            else:
-                lines.append("\n🟡 持久化自定义关键词：（暂无）")
-
+            lines.append("\n💡 可用 add / remove 管理，修改后自动持久化保存")
             await event.send(event.plain_result("\n".join(lines)))
+
+    # ==================== 首次回复词管理子逻辑 ====================
+
+    async def _handle_first_reply_admin(self, event: AstrMessageEvent, parts: list):
+        """处理首次回复词的查看和设置"""
+        if len(parts) < 3:
+            current = str(self.data.get("first_reply", "欸，云朵"))
+            await event.send(event.plain_result(
+                f"📋 当前首次回复词：\n「{current}」\n\n"
+                "💡 设置新值：/云原神管理 first_reply <新文本>"
+            ))
+            return
+
+        new_text = parts[2].strip()
+        if not new_text:
+            await event.send(event.plain_result("❌ 首次回复词不能为空"))
+            return
+
+        self.data["first_reply"] = new_text
+        self._save_data()
+        await event.send(event.plain_result(
+            f"✅ 首次回复词已设置为：\n「{new_text}」\n"
+            "下次触发时将使用新文本"
+        ))
+
+    # ==================== 梗段词库管理子逻辑 ====================
+
+    async def _handle_quote_admin(self, event: AstrMessageEvent, parts: list):
+        """处理梗段词库的增删改查"""
+        quotes = self.data.get("quote_pool", [])
+        if not isinstance(quotes, list):
+            quotes = []
+            self.data["quote_pool"] = quotes
+
+        if len(parts) < 3 or not parts[2].strip():
+            # 显示帮助
+            await event.send(event.plain_result(
+                "📋 梗段词库管理：\n"
+                "  /云原神管理 quote list              — 列出所有梗段\n"
+                "  /云原神管理 quote add <梗段>        — 添加新梗段\n"
+                "  /云原神管理 quote remove <编号>     — 删除指定梗段\n"
+                "  /云原神管理 quote set <编号> <内容>  — 修改指定梗段\n\n"
+                f"当前共 {len(quotes)} 段梗"
+            ))
+            return
+
+        sub2 = parts[2].strip()
+        sub2_parts = sub2.split(maxsplit=1)
+        action = sub2_parts[0]
+
+        if action == "list":
+            lines = [f"🗂️ 梗段词库（共 {len(quotes)} 段）：\n"]
+            if quotes:
+                for i, q in enumerate(quotes, 1):
+                    display = q[:40] + "…" if len(q) > 40 else q
+                    lines.append(f"  {i}. {display}")
+                lines.append("\n💡 可用 quote add / remove / set 管理")
+            else:
+                lines.append("  （暂无梗段，可用 quote add <内容> 添加）")
+            await event.send(event.plain_result("\n".join(lines)))
+
+        elif action == "add":
+            if len(sub2_parts) < 2 or not sub2_parts[1].strip():
+                await event.send(event.plain_result("❌ 用法：/云原神管理 quote add <梗段内容>"))
+                return
+            content = sub2_parts[1].strip()
+            quotes.append(content)
+            self.data["quote_pool"] = quotes
+            self._save_data()
+            display = content[:30] + "…" if len(content) > 30 else content
+            await event.send(event.plain_result(
+                f"✅ 已添加梗段 #{len(quotes)}：\n「{display}」\n"
+                f"当前共 {len(quotes)} 段梗"
+            ))
+
+        elif action == "remove":
+            if len(sub2_parts) < 2 or not sub2_parts[1].strip():
+                await event.send(event.plain_result("❌ 用法：/云原神管理 quote remove <编号>"))
+                return
+            try:
+                idx = int(sub2_parts[1].strip())
+            except ValueError:
+                await event.send(event.plain_result("❌ 编号必须为数字"))
+                return
+
+            if idx < 1 or idx > len(quotes):
+                await event.send(event.plain_result(f"❌ 编号 {idx} 超出范围（1~{len(quotes)}）"))
+                return
+
+            removed = quotes.pop(idx - 1)
+            self.data["quote_pool"] = quotes
+            self._save_data()
+            display = removed[:30] + "…" if len(removed) > 30 else removed
+            await event.send(event.plain_result(
+                f"✅ 已删除梗段 #{idx}：\n「{display}」\n"
+                f"剩余 {len(quotes)} 段梗"
+            ))
+
+        elif action == "set":
+            # set 需要编号 + 内容，格式：/云原神管理 quote set 3 新内容
+            # 由于 split 限制，需要特殊处理
+            # parts[2] 是 "set 3 新内容..." 或 "set 3"
+            rest = parts[2].strip() if len(parts) >= 3 else ""
+            # rest 格式: "set <编号> <内容>"
+            set_parts = rest.split(maxsplit=2)
+            if len(set_parts) < 3:
+                await event.send(event.plain_result("❌ 用法：/云原神管理 quote set <编号> <新内容>"))
+                return
+            try:
+                idx = int(set_parts[1])
+            except ValueError:
+                await event.send(event.plain_result("❌ 编号必须为数字"))
+                return
+
+            if idx < 1 or idx > len(quotes):
+                await event.send(event.plain_result(f"❌ 编号 {idx} 超出范围（1~{len(quotes)}）"))
+                return
+
+            new_content = set_parts[2].strip()
+            if not new_content:
+                await event.send(event.plain_result("❌ 梗段内容不能为空"))
+                return
+
+            old = quotes[idx - 1]
+            quotes[idx - 1] = new_content
+            self.data["quote_pool"] = quotes
+            self._save_data()
+            old_display = old[:20] + "…" if len(old) > 20 else old
+            new_display = new_content[:20] + "…" if len(new_content) > 20 else new_content
+            await event.send(event.plain_result(
+                f"✅ 已修改梗段 #{idx}：\n"
+                f"  旧: 「{old_display}」\n"
+                f"  新: 「{new_display}」"
+            ))
+
+        else:
+            await event.send(event.plain_result(f"❌ 未知操作: {action}，可用: add / remove / list / set"))
 
     # ==================== 黑名单管理子逻辑 ====================
 
     async def _handle_blacklist_admin(self, event: AstrMessageEvent, parts: list):
         """
         处理黑/白名单的添加/删除/列出。
-        parts 格式: ["/云原神管理", "blacklist", "add 123456789"] 或 ["/云原神管理", "blacklist", "list"]
+        统一操作持久化数据中的 blacklist_groups。
         """
+        groups = self.data.get("blacklist_groups", [])
+        if not isinstance(groups, list):
+            groups = []
+            self.data["blacklist_groups"] = groups
+
         if len(parts) < 3 or not parts[2].strip():
             mode = self.config.get("blacklist_mode", "blacklist")
             await event.send(event.plain_result(
@@ -357,17 +514,18 @@ class Main(Star):
                 return
 
             group_id = str(arg).strip()
-            if group_id in self.custom_blacklist:
+            if group_id in groups:
                 await event.send(event.plain_result(f"⚠️ 群 {group_id} 已在名单中"))
                 return
 
-            self.custom_blacklist.append(group_id)
-            self._save_blacklist()
+            groups.append(group_id)
+            self.data["blacklist_groups"] = groups
+            self._save_data()
 
             mode = self.config.get("blacklist_mode", "blacklist")
             await event.send(event.plain_result(
                 f"✅ 已将群 {group_id} 添加到{'黑' if mode == 'blacklist' else '白'}名单\n"
-                f"当前共 {len(self.custom_blacklist)} 个群（通过管理命令管理）"
+                f"当前共 {len(groups)} 个群"
             ))
 
         elif action == "remove":
@@ -376,65 +534,74 @@ class Main(Star):
                 return
 
             group_id = str(arg).strip()
-            if group_id not in self.custom_blacklist:
+            if group_id not in groups:
                 await event.send(event.plain_result(f"❌ 名单中未找到群 {group_id}"))
-
-                config_groups = self.config.get("blacklist_groups", [])
-                if not isinstance(config_groups, list):
-                    config_groups = []
-                if group_id in [str(g) for g in config_groups]:
-                    await event.send(event.plain_result(
-                        "💡 该群在 _conf_schema.json 的 blacklist_groups 配置中，"
-                        "请到 AstrBot 管理面板修改配置来移除"
-                    ))
                 return
 
-            self.custom_blacklist.remove(group_id)
-            self._save_blacklist()
+            groups.remove(group_id)
+            self.data["blacklist_groups"] = groups
+            self._save_data()
 
             mode = self.config.get("blacklist_mode", "blacklist")
             await event.send(event.plain_result(
                 f"✅ 已将群 {group_id} 从{'黑' if mode == 'blacklist' else '白'}名单移除\n"
-                f"剩余 {len(self.custom_blacklist)} 个群（通过管理命令管理）"
+                f"剩余 {len(groups)} 个群"
             ))
 
         elif action == "list":
             mode = self.config.get("blacklist_mode", "blacklist")
-            config_groups = self.config.get("blacklist_groups", [])
-            if not isinstance(config_groups, list):
-                config_groups = []
-
-            lines = [f"📋 群组{'黑' if mode == 'blacklist' else '白'}名单：\n"]
-
-            if config_groups:
-                lines.append(f"🔶 面板配置（来源 _conf_schema.json）：")
-                for g in config_groups:
-                    lines.append(f"   • {g}")
-                lines.append("   💡 需到管理面板修改配置来增删")
-                lines.append("")
-
-            if self.custom_blacklist:
-                lines.append(f"🟠 管理命令管理（可通过 blacklist add/remove 增删）：")
-                for i, g in enumerate(self.custom_blacklist, 1):
-                    lines.append(f"   {i}. {g}")
+            lines = [f"📋 群组{'黑' if mode == 'blacklist' else '白'}名单（共 {len(groups)} 个）：\n"]
+            if groups:
+                for i, g in enumerate(groups, 1):
+                    lines.append(f"  {i}. {g}")
             else:
-                lines.append("🟠 管理命令管理：（暂无，可使用 blacklist add <群号> 添加）")
+                lines.append("  （暂无群，可用 blacklist add <群号> 添加）")
 
             lines.append(f"\n📌 当前模式: {mode}")
             lines.append(
                 "   blacklist = 名单中的群不触发 | "
                 "whitelist = 仅名单中的群触发"
             )
-
+            lines.append("\n💡 切换模式请到 AstrBot 管理面板修改 blacklist_mode 配置")
             await event.send(event.plain_result("\n".join(lines)))
 
         else:
             await event.send(event.plain_result(f"❌ 未知操作: {action}，可用: add / remove / list"))
 
+    # ==================== 状态查看 ====================
+
+    async def _handle_status(self, event: AstrMessageEvent):
+        """查看当前插件整体状态"""
+        keywords = self.data.get("trigger_keywords", [])
+        if not isinstance(keywords, list):
+            keywords = []
+        quotes = self.data.get("quote_pool", [])
+        if not isinstance(quotes, list):
+            quotes = []
+        groups = self.data.get("blacklist_groups", [])
+        if not isinstance(groups, list):
+            groups = []
+        first_reply = str(self.data.get("first_reply", "欸，云朵"))
+        trigger_enabled = self.config.get("enable_keyword_trigger", True)
+        mode = self.config.get("blacklist_mode", "blacklist")
+        delay = self.config.get("reply_delay_ms", 800)
+
+        await event.send(event.plain_result(
+            "📊 好想玩云原神🎊 v2.0 状态\n"
+            "━━━━━━━━━━━━━━━━━━\n"
+            f"🔘 关键词触发: {'✅ 开启' if trigger_enabled else '❌ 关闭'}\n"
+            f"🗂️ 触发关键词: {len(keywords)} 个\n"
+            f"💬 首次回复词: 「{first_reply}」\n"
+            f"🎭 梗段词库: {len(quotes)} 段\n"
+            f"⏱️ 回复延迟: {delay}ms\n"
+            f"🚫 群名单模式: {mode}（{len(groups)} 个群）\n"
+            "━━━━━━━━━━━━━━━━━━\n"
+            "可用 /云原神管理 查看完整帮助"
+        ))
+
     # ==================== 生命周期 ====================
 
     async def terminate(self):
         """插件卸载时保存数据"""
-        self._save_keywords()
-        self._save_blacklist()
-        logger.info("🎊 好想玩云原神🎊 已卸载，数据已保存")
+        self._save_data()
+        logger.info("🎊 好想玩云原神🎊 v2.0 已卸载，数据已保存")
