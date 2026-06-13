@@ -1,5 +1,23 @@
 # 🎊 好想玩云原神🎊 更新日志
 
+## [3.0.0] - 2026-06-08
+
+### 🎨 重大革新
+- **多匹配组架构**：全新的 match_groups 数据结构，支持创建多个独立匹配组，每组可独立配置 keywords、first_reply、quote_pool 和 reply_delay_ms
+- **自动迁移兼容**：v2.x 格式的 data.json 自动检测并迁移到 v3.0 的 match_groups 格式，无缝升级
+- **配置优先级优化**：`_conf_schema.json` 中的旧配置项标记为"首次安装初始值"，启动后 match_groups 完全接管
+
+### ✨ 新增功能
+- **匹配组管理命令体系**：`/云原神管理 group list/add/remove/rename` 全套组级管理
+- **组内精细配置**：`/云原神管理 group <组名> add/remove/first_reply/delay/quote` 操控组内每一细节
+- **组详情查看**：`/云原神管理 group <组名>` 查看组的完整状态（关键词、梗段数、回复词、延迟）
+- **独立延迟**：每个组可独立设置 reply_delay_ms，不同组不同节奏
+- **消息匹配**：按组顺序匹配关键词，先到先得，支持关键词跨组重叠
+
+### 🔧 变更
+- 快捷命令（add/first_reply/quote/blacklist/status）保持对第一组的兼容操作
+- 版本号更新至 3.0.0
+
 ## [2.0.0] - 2026-06-08
 
 ### 🎨 重大重构
