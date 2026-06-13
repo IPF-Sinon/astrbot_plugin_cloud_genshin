@@ -5,28 +5,34 @@
     "hint": "关闭后只有手动输入 /云原神 才会回复",
     "default": true
   },
+  "match_groups": {
+    "description": "匹配组配置（v3.0 核心功能）",
+    "type": "list",
+    "hint": "每组包含 keywords（触发关键词）、first_reply（首次回复词）、quote_pool（梗段词库）、reply_delay_ms（延迟毫秒）。首次启动时下方各配置项会合并为一个默认组。之后全部由管理命令 /云原神管理 group 操控",
+    "default": []
+  },
   "first_reply": {
-    "description": "首次回复词（检测到关键词后立即发送的文本）",
+    "description": "【首次安装初始值】首次回复词",
     "type": "string",
-    "hint": "发送完此文本后，会延迟再发送一条梗段",
+    "hint": "仅首次安装时使用，启动后由 match_groups 接管",
     "default": "欸，云朵"
   },
   "trigger_keywords": {
-    "description": "触发关键词列表（所有关键词合并，可自由增删）",
+    "description": "【首次安装初始值】触发关键词列表",
     "type": "list",
-    "hint": "消息中含有列表中的任意词就会触发。默认含'云朵'、'云原神'",
+    "hint": "仅首次安装时使用，启动后由 match_groups 接管",
     "default": ["云朵", "云原神"]
   },
   "reply_delay_ms": {
-    "description": "触发后延迟毫秒数",
+    "description": "【首次安装初始值】默认回复延迟毫秒数",
     "type": "int",
-    "hint": "发送完首次回复词后等待多少毫秒再发梗段，建议500~2000",
+    "hint": "仅首次安装时使用，启动后由 match_groups 中的各组独立控制",
     "default": 800
   },
   "quote_pool": {
-    "description": "梗段词库（每次随机取一段发送，可自由增删改）",
+    "description": "【首次安装初始值】默认梗段词库",
     "type": "list",
-    "hint": "所有梗段内容，每段一条。可自由编辑增删，修改后需重载插件生效",
+    "hint": "仅首次安装时使用，启动后由 match_groups 各组独立管理",
     "default": [
       "啊😲？云朵☁️😄，哒↘哒↗哒↘哒↗哒↘，好想玩原神😨，云☁️原神😙",
       "当当当当当😊，看精彩纷纷👍🎊😆，云☁️原神😄，呜呜呜呜呜，好想玩原神😭😭😭云☁️原神",
@@ -49,9 +55,9 @@
     "options": ["blacklist", "whitelist"]
   },
   "blacklist_groups": {
-    "description": "群组黑/白名单列表",
+    "description": "【首次安装初始值】群组黑/白名单列表",
     "type": "list",
-    "hint": "填入群聊ID（字符串格式），黑名单模式下这些群不触发，白名单模式下仅这些群触发",
+    "hint": "仅首次安装时使用，启动后由管理命令管理",
     "default": []
   }
 }
