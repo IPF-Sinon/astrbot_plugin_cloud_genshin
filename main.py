@@ -65,7 +65,7 @@ def _make_default_group(config: AstrBotConfig) -> dict:
 # ==================== 主插件类 ====================
 
 class Main(Star):
-    """🎊 好想玩云原神🎊 v4.3 — 多媒体 · 灵活回复模式"""
+    """🎊 好想玩云原神🎊 v4.4 — 多媒体 · 灵活回复模式"""
 
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
@@ -88,7 +88,7 @@ class Main(Star):
         mode = self.config.get("blacklist_mode", "blacklist")
 
         logger.info(
-            f"🎊 好想玩云原神🎊 v4.3 已加载 | "
+            f"🎊 好想玩云原神🎊 v4.4 已加载 | "
             f"{len(groups)} 个匹配组 | "
             f"总关键词: {total_kw}个 | "
             f"总梗段: {total_qp}段 | "
@@ -141,7 +141,7 @@ class Main(Star):
                                 "reply_mode": "mixed"
                             }]
                             data["blacklist_groups"] = old_bl
-                            logger.info("🎊 已从 v2.x 格式迁移到 v4.3")
+                            logger.info("🎊 已从 v2.x 格式迁移到 v4.4")
                             self._save_data_inner(data)
         except Exception as e:
             logger.error(f"🎊 加载持久化文件失败: {e}")
@@ -165,7 +165,7 @@ class Main(Star):
                 g["quote_pool"] = list(default_group["quote_pool"])
             if "reply_delay_ms" not in g or not isinstance(g["reply_delay_ms"], (int, float)):
                 g["reply_delay_ms"] = default_group["reply_delay_ms"]
-            # v4.3 新增字段
+            # v4.4 新增字段
             if "media_pool" not in g or not isinstance(g["media_pool"], list):
                 g["media_pool"] = []
             if "reply_mode" not in g or g["reply_mode"] not in REPLY_MODES:
@@ -439,7 +439,7 @@ class Main(Star):
     @filter.permission_type(filter.PermissionType.ADMIN)
     async def cmd_admin(self, event: AstrMessageEvent):
         """
-        云原神管理命令 v4.3
+        云原神管理命令 v4.4
         组管理：
           /云原神管理 group list/add/remove/rename
           /云原神管理 group <组名> add/remove/first_reply/delay/quote/media/mode
@@ -451,7 +451,7 @@ class Main(Star):
 
         if len(parts) < 2:
             yield event.plain_result(
-                "📋 好想玩云原神🎊 v4.3 管理命令：\n"
+                "📋 好想玩云原神🎊 v4.4 管理命令：\n"
                 "  组管理：\n"
                 "  /云原神管理 group list/add/remove/rename\n"
                 "  /云原神管理 group <组名> add/remove/first_reply/delay\n"
@@ -734,7 +734,7 @@ class Main(Star):
             await event.send(event.plain_result("📋 暂无匹配组"))
             return
 
-        lines = [f"📋 好想玩云原神🎊 v4.3 匹配组（共 {len(groups)} 个）：\n"]
+        lines = [f"📋 好想玩云原神🎊 v4.4 匹配组（共 {len(groups)} 个）：\n"]
         for i, g in enumerate(groups, 1):
             kw = g.get("keywords", [])
             qp = g.get("quote_pool", [])
@@ -843,7 +843,7 @@ class Main(Star):
         else:
             await event.send(event.plain_result(f"❌ 未知操作: {q_action}，可用: list / add / remove / set"))
 
-    # ==================== 组内 Media 管理（v4.3 新增） ====================
+    # ==================== 组内 Media 管理（v4.4 新增） ====================
 
     async def _handle_media_admin(self, event: AstrMessageEvent, group: dict, group_name: str, groups: list, sub_arg: str):
         """处理组内媒体池增删查"""
@@ -968,7 +968,7 @@ class Main(Star):
         else:
             await event.send(event.plain_result(f"❌ 未知操作: {q_action}，可用: list / add / remove / info"))
 
-    # ==================== 组内 Mode 管理（v4.3 新增） ====================
+    # ==================== 组内 Mode 管理（v4.4 新增） ====================
 
     async def _handle_mode_admin(self, event: AstrMessageEvent, group: dict, group_name: str, groups: list, sub_arg: str):
         """处理组内回复模式设置"""
@@ -1148,7 +1148,7 @@ class Main(Star):
         else:
             await event.send(event.plain_result(f"❌ 未知操作: {action}，可用: list / add / remove / set"))
 
-    # ==================== 快捷 Media 管理（v4.3 新增） ====================
+    # ==================== 快捷 Media 管理（v4.4 新增） ====================
 
     async def _handle_media_admin_quick(self, event: AstrMessageEvent, parts: list):
         """快捷媒体管理：操作第一个组"""
@@ -1350,7 +1350,7 @@ class Main(Star):
         trigger_enabled = self.config.get("enable_keyword_trigger", True)
         mode = self.config.get("blacklist_mode", "blacklist")
 
-        lines = ["📊 好想玩云原神🎊 v4.3 状态\n━━━━━━━━━━━━━━━━━━"]
+        lines = ["📊 好想玩云原神🎊 v4.4 状态\n━━━━━━━━━━━━━━━━━━"]
         lines.append(f"🔘 关键词触发: {'✅ 开启' if trigger_enabled else '❌ 关闭'}")
         lines.append(f"📦 匹配组: {len(groups)} 个\n")
 
@@ -1375,4 +1375,4 @@ class Main(Star):
 
     async def terminate(self):
         self._save_data()
-        logger.info("🎊 好想玩云原神🎊 v4.3 已卸载，数据已保存")
+        logger.info("🎊 好想玩云原神🎊 v4.4 已卸载，数据已保存")
