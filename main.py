@@ -53,7 +53,7 @@ def _make_default_group(config: AstrBotConfig) -> dict:
 # ==================== 主插件类 ====================
 
 class Main(Star):
-    """🎊 好想玩云原神🎊 v4.1 — 多媒体 · 灵活回复模式"""
+    """🎊 好想玩云原神🎊 v4.2 — 多媒体 · 灵活回复模式"""
 
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
@@ -76,7 +76,7 @@ class Main(Star):
         mode = self.config.get("blacklist_mode", "blacklist")
 
         logger.info(
-            f"🎊 好想玩云原神🎊 v4.1 已加载 | "
+            f"🎊 好想玩云原神🎊 v4.2 已加载 | "
             f"{len(groups)} 个匹配组 | "
             f"总关键词: {total_kw}个 | "
             f"总梗段: {total_qp}段 | "
@@ -129,7 +129,7 @@ class Main(Star):
                                 "reply_mode": "mixed"
                             }]
                             data["blacklist_groups"] = old_bl
-                            logger.info("🎊 已从 v2.x 格式迁移到 v4.1")
+                            logger.info("🎊 已从 v2.x 格式迁移到 v4.2")
                             self._save_data_inner(data)
         except Exception as e:
             logger.error(f"🎊 加载持久化文件失败: {e}")
@@ -153,7 +153,7 @@ class Main(Star):
                 g["quote_pool"] = list(default_group["quote_pool"])
             if "reply_delay_ms" not in g or not isinstance(g["reply_delay_ms"], (int, float)):
                 g["reply_delay_ms"] = self.config.get("reply_delay_ms", 800)
-            # v4.1 新增字段
+            # v4.2 新增字段
             if "media_pool" not in g or not isinstance(g["media_pool"], list):
                 g["media_pool"] = []
             if "reply_mode" not in g or g["reply_mode"] not in REPLY_MODES:
@@ -166,7 +166,57 @@ class Main(Star):
         if not isinstance(bl, list): bl = []
         data["blacklist_groups"] = bl
 
+        # ====== 面板配置 → 默认组同步 ======
+        # 每次启动时用面板配置刷新默认组，确保面板修改后重启即生效
+        if data["match_groups"]:
+            default = data["match_groups"][0]
+            # 只同步面板上有对应项的字段
+            kw = self.config.get("trigger_keywords", None)
+            if kw is not None and isinstance(kw, list):
+                default["keywords"] = list(kw)
+            fr = self.config.get("first_reply", None)
+            if fr is not None and isinstance(fr, str):
+                default["first_reply"] = fr
+            dl = self.config.get("reply_delay_ms", None)
+            if dl is not None and isinstance(dl, (int, float)):
+                default["reply_delay_ms"] = dl
+            qp = self.config.get("quote_pool", None)
+            if qp is not None and isinstance(qp, list):
+                default["quote_pool"] = list(qp)
+            rm = self.config.get("reply_mode", None)
+            if rm is not None and rm in REPLY_MODES:
+                default["reply_mode"] = rm
+            mp = self.config.get("media_pool", None)
+            if mp is not None and isinstance(mp, list):
+                default["media_pool"] = list(mp)
+
         return data
+
+    def _sync_config_to_data(self):
+        """将面板配置同步到默认组（运行时调用）"""
+        groups = self.data.get("match_groups", [])
+        if not groups:
+            return
+        default = groups[0]
+        kw = self.config.get("trigger_keywords", None)
+        if kw is not None and isinstance(kw, list):
+            default["keywords"] = list(kw)
+        fr = self.config.get("first_reply", None)
+        if fr is not None and isinstance(fr, str):
+            default["first_reply"] = fr
+        dl = self.config.get("reply_delay_ms", None)
+        if dl is not None and isinstance(dl, (int, float)):
+            default["reply_delay_ms"] = dl
+        qp = self.config.get("quote_pool", None)
+        if qp is not None and isinstance(qp, list):
+            default["quote_pool"] = list(qp)
+        rm = self.config.get("reply_mode", None)
+        if rm is not None and rm in REPLY_MODES:
+            default["reply_mode"] = rm
+        mp = self.config.get("media_pool", None)
+        if mp is not None and isinstance(mp, list):
+            default["media_pool"] = list(mp)
+        self._save_data()
 
     def _save_data_inner(self, data: dict):
         try:
@@ -397,7 +447,7 @@ class Main(Star):
     @filter.permission_type(filter.PermissionType.ADMIN)
     async def cmd_admin(self, event: AstrMessageEvent):
         """
-        云原神管理命令 v4.1
+        云原神管理命令 v4.2
         组管理：
           /云原神管理 group list/add/remove/rename
           /云原神管理 group <组名> add/remove/first_reply/delay/quote/media/mode
@@ -409,7 +459,7 @@ class Main(Star):
 
         if len(parts) < 2:
             yield event.plain_result(
-                "📋 好想玩云原神🎊 v4.1 管理命令：\n"
+                "📋 好想玩云原神🎊 v4.2 管理命令：\n"
                 "  组管理：\n"
                 "  /云原神管理 group list/add/remove/rename\n"
                 "  /云原神管理 group <组名> add/remove/first_reply/delay\n"
@@ -421,7 +471,8 @@ class Main(Star):
                 "  /云原神管理 media list/add/remove\n"
                 "  /云原神管理 mode <模式>\n"
                 "  /云原神管理 blacklist add/remove/list\n"
-                "  /云原神管理 status"
+                "  /云原神管理 status\n"
+                "  /云原神管理 configsync — 同步面板配置到默认组"
             )
             return
 
@@ -454,9 +505,13 @@ class Main(Star):
         if subcmd == "status":
             await self._handle_status(event)
             return
+        if subcmd == "configsync":
+            self._sync_config_to_data()
+            yield event.plain_result("✅ 面板配置已同步到默认组！")
+            return
 
         yield event.plain_result(
-            f"❌ 未知子命令: {subcmd}，可用: group / add / remove / list / first_reply / quote / media / mode / blacklist / status"
+            f"❌ 未知子命令: {subcmd}，可用: group / add / remove / list / first_reply / quote / media / mode / blacklist / status / configsync"
         )
 
     # ==================== 匹配组管理（核心） ====================
@@ -687,7 +742,7 @@ class Main(Star):
             await event.send(event.plain_result("📋 暂无匹配组"))
             return
 
-        lines = [f"📋 好想玩云原神🎊 v4.1 匹配组（共 {len(groups)} 个）：\n"]
+        lines = [f"📋 好想玩云原神🎊 v4.2 匹配组（共 {len(groups)} 个）：\n"]
         for i, g in enumerate(groups, 1):
             kw = g.get("keywords", [])
             qp = g.get("quote_pool", [])
@@ -796,7 +851,7 @@ class Main(Star):
         else:
             await event.send(event.plain_result(f"❌ 未知操作: {q_action}，可用: list / add / remove / set"))
 
-    # ==================== 组内 Media 管理（v4.1 新增） ====================
+    # ==================== 组内 Media 管理（v4.2 新增） ====================
 
     async def _handle_media_admin(self, event: AstrMessageEvent, group: dict, group_name: str, groups: list, sub_arg: str):
         """处理组内媒体池增删查"""
@@ -921,7 +976,7 @@ class Main(Star):
         else:
             await event.send(event.plain_result(f"❌ 未知操作: {q_action}，可用: list / add / remove / info"))
 
-    # ==================== 组内 Mode 管理（v4.1 新增） ====================
+    # ==================== 组内 Mode 管理（v4.2 新增） ====================
 
     async def _handle_mode_admin(self, event: AstrMessageEvent, group: dict, group_name: str, groups: list, sub_arg: str):
         """处理组内回复模式设置"""
@@ -1101,7 +1156,7 @@ class Main(Star):
         else:
             await event.send(event.plain_result(f"❌ 未知操作: {action}，可用: list / add / remove / set"))
 
-    # ==================== 快捷 Media 管理（v4.1 新增） ====================
+    # ==================== 快捷 Media 管理（v4.2 新增） ====================
 
     async def _handle_media_admin_quick(self, event: AstrMessageEvent, parts: list):
         """快捷媒体管理：操作第一个组"""
@@ -1303,7 +1358,7 @@ class Main(Star):
         trigger_enabled = self.config.get("enable_keyword_trigger", True)
         mode = self.config.get("blacklist_mode", "blacklist")
 
-        lines = ["📊 好想玩云原神🎊 v4.1 状态\n━━━━━━━━━━━━━━━━━━"]
+        lines = ["📊 好想玩云原神🎊 v4.2 状态\n━━━━━━━━━━━━━━━━━━"]
         lines.append(f"🔘 关键词触发: {'✅ 开启' if trigger_enabled else '❌ 关闭'}")
         lines.append(f"📦 匹配组: {len(groups)} 个\n")
 
@@ -1328,4 +1383,4 @@ class Main(Star):
 
     async def terminate(self):
         self._save_data()
-        logger.info("🎊 好想玩云原神🎊 v4.1 已卸载，数据已保存")
+        logger.info("🎊 好想玩云原神🎊 v4.2 已卸载，数据已保存")
