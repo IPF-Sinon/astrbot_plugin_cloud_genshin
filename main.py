@@ -28,16 +28,20 @@ MODE_HELP = {
 
 def _make_default_group(config: AstrBotConfig) -> dict:
     dng = config.get("default_new_group", None)
-    if dng is not None and isinstance(dng, dict):
-        return {
-            "name": "默认组",
-            "keywords": list(dng.get("keywords", ["云朵", "云原神"])),
-            "first_reply": str(dng.get("first_reply", "欸，云朵") or "欸，云朵"),
-            "quote_pool": list(dng.get("quote_pool", [])),
-            "reply_delay_ms": dng.get("reply_delay_ms", 800),
-            "media_pool": list(dng.get("media_pool", [])),
-            "reply_mode": dng.get("reply_mode", "mixed")
-        }
+    # 兼容 list（AstrBot 面板类型）和 dict（纯对象）两种格式
+    if dng is not None:
+        if isinstance(dng, list) and len(dng) > 0 and isinstance(dng[0], dict):
+            dng = dng[0]
+        if isinstance(dng, dict):
+            return {
+                "name": "默认组",
+                "keywords": list(dng.get("keywords", ["云朵", "云原神"])),
+                "first_reply": str(dng.get("first_reply", "欸，云朵") or "欸，云朵"),
+                "quote_pool": list(dng.get("quote_pool", [])),
+                "reply_delay_ms": dng.get("reply_delay_ms", 800),
+                "media_pool": list(dng.get("media_pool", [])),
+                "reply_mode": dng.get("reply_mode", "mixed")
+            }
     # 兜底：硬编码默认值
     return {
         "name": "默认组",
@@ -65,7 +69,7 @@ def _make_default_group(config: AstrBotConfig) -> dict:
 # ==================== 主插件类 ====================
 
 class Main(Star):
-    """🎊 好想玩云原神🎊 v4.4 — 多媒体 · 灵活回复模式"""
+    """🎊 好想玩云原神🎊 v4.5 — 多媒体 · 灵活回复模式"""
 
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
@@ -88,7 +92,7 @@ class Main(Star):
         mode = self.config.get("blacklist_mode", "blacklist")
 
         logger.info(
-            f"🎊 好想玩云原神🎊 v4.4 已加载 | "
+            f"🎊 好想玩云原神🎊 v4.5 已加载 | "
             f"{len(groups)} 个匹配组 | "
             f"总关键词: {total_kw}个 | "
             f"总梗段: {total_qp}段 | "
@@ -141,7 +145,7 @@ class Main(Star):
                                 "reply_mode": "mixed"
                             }]
                             data["blacklist_groups"] = old_bl
-                            logger.info("🎊 已从 v2.x 格式迁移到 v4.4")
+                            logger.info("🎊 已从 v2.x 格式迁移到 v4.5")
                             self._save_data_inner(data)
         except Exception as e:
             logger.error(f"🎊 加载持久化文件失败: {e}")
@@ -165,7 +169,7 @@ class Main(Star):
                 g["quote_pool"] = list(default_group["quote_pool"])
             if "reply_delay_ms" not in g or not isinstance(g["reply_delay_ms"], (int, float)):
                 g["reply_delay_ms"] = default_group["reply_delay_ms"]
-            # v4.4 新增字段
+            # v4.5 新增字段
             if "media_pool" not in g or not isinstance(g["media_pool"], list):
                 g["media_pool"] = []
             if "reply_mode" not in g or g["reply_mode"] not in REPLY_MODES:
@@ -439,7 +443,7 @@ class Main(Star):
     @filter.permission_type(filter.PermissionType.ADMIN)
     async def cmd_admin(self, event: AstrMessageEvent):
         """
-        云原神管理命令 v4.4
+        云原神管理命令 v4.5
         组管理：
           /云原神管理 group list/add/remove/rename
           /云原神管理 group <组名> add/remove/first_reply/delay/quote/media/mode
@@ -451,7 +455,7 @@ class Main(Star):
 
         if len(parts) < 2:
             yield event.plain_result(
-                "📋 好想玩云原神🎊 v4.4 管理命令：\n"
+                "📋 好想玩云原神🎊 v4.5 管理命令：\n"
                 "  组管理：\n"
                 "  /云原神管理 group list/add/remove/rename\n"
                 "  /云原神管理 group <组名> add/remove/first_reply/delay\n"
@@ -734,7 +738,7 @@ class Main(Star):
             await event.send(event.plain_result("📋 暂无匹配组"))
             return
 
-        lines = [f"📋 好想玩云原神🎊 v4.4 匹配组（共 {len(groups)} 个）：\n"]
+        lines = [f"📋 好想玩云原神🎊 v4.5 匹配组（共 {len(groups)} 个）：\n"]
         for i, g in enumerate(groups, 1):
             kw = g.get("keywords", [])
             qp = g.get("quote_pool", [])
@@ -843,7 +847,7 @@ class Main(Star):
         else:
             await event.send(event.plain_result(f"❌ 未知操作: {q_action}，可用: list / add / remove / set"))
 
-    # ==================== 组内 Media 管理（v4.4 新增） ====================
+    # ==================== 组内 Media 管理（v4.5 新增） ====================
 
     async def _handle_media_admin(self, event: AstrMessageEvent, group: dict, group_name: str, groups: list, sub_arg: str):
         """处理组内媒体池增删查"""
@@ -858,12 +862,12 @@ class Main(Star):
             vid_c = sum(1 for m in mp if m.get("type") == "video")
             await event.send(event.plain_result(
                 f"📋 组「{group_name}」媒体管理：\n"
-                f"  group {group_name} media list                     — 列出所有媒体\n"
-                f"  group {group_name} media add <type> <src> [source]  — 添加媒体\n"
-                f"  group {group_name} media remove <编号>             — 删除媒体\n"
-                f"  group {group_name} media info <编号>               — 查看媒体详情\n"
+                f"  group {group_name} media list                     — 列出全部媒体\n"
+                f"  group {group_name} media add <type> <src> [source] — 添加媒体\n"
+                f"  group {group_name} media remove <编号>            — 删除媒体\n"
+                f"  group {group_name} media info <编号>              — 查看媒体详情\n"
                 f"  type: image/record/video, source: url(默认)/local\n\n"
-                f"当前共 {len(mp)} 个媒体 (图片{img_c} 语音{rec_c} 视频{vid_c})"
+                f"当前共 {len(mp)} 个媒体（图片{img_c} 语音{rec_c} 视频{vid_c}）"
             ))
             return
 
@@ -879,7 +883,7 @@ class Main(Star):
                     src = m.get("src", "")
                     source = m.get("source", "url")
                     d = src[:40] + "…" if len(src) > 40 else src
-                    icon = {"image": "🖼️", "record": "🎵", "video": "🎬"}.get(mtype, "📁")
+                    icon = {"image": "🖼️", "record": "🔵", "video": "🎬"}.get(mtype, "📄")
                     lines.append(f"  {i}. {icon} [{mtype}] ({source}) {d}")
             else:
                 lines.append("  （暂无媒体）")
@@ -887,7 +891,7 @@ class Main(Star):
 
         elif q_action == "add":
             # 格式: add <type> <src> [source]
-            # q_arg = "image https://..." 或 "image /path/file.jpg local"
+            # q_arg = "image https://... url" 或 "image /path/file.jpg local"
             add_parts = q_arg.split(maxsplit=2)
             if len(add_parts) < 2:
                 await event.send(event.plain_result(
@@ -900,10 +904,10 @@ class Main(Star):
             source = add_parts[2].strip().lower() if len(add_parts) > 2 else "url"
 
             if mtype not in MEDIA_TYPES:
-                await event.send(event.plain_result(f"❌ 类型必须为: {'/'.join(MEDIA_TYPES)}"))
+                await event.send(event.plain_result(f"❌ 类型不正确: {'/'.join(MEDIA_TYPES)}"))
                 return
             if source not in SOURCE_TYPES:
-                await event.send(event.plain_result(f"❌ 来源必须为: {'/'.join(SOURCE_TYPES)}"))
+                await event.send(event.plain_result(f"❌ 来源不正确: {'/'.join(SOURCE_TYPES)}"))
                 return
             if not src:
                 await event.send(event.plain_result("❌ 媒体地址不能为空"))
@@ -912,7 +916,7 @@ class Main(Star):
             mp.append({"type": mtype, "src": src, "source": source})
             group["media_pool"] = mp
             self._save_data()
-            icon = {"image": "🖼️", "record": "🎵", "video": "🎬"}.get(mtype, "📁")
+            icon = {"image": "🖼️", "record": "🔵", "video": "🎬"}.get(mtype, "📄")
             d = src[:40] + "…" if len(src) > 40 else src
             await event.send(event.plain_result(
                 f"✅ 组「{group_name}」已添加媒体 #{len(mp)}：\n"
@@ -958,7 +962,7 @@ class Main(Star):
             mtype = m.get("type", "?")
             src = m.get("src", "")
             source = m.get("source", "url")
-            icon = {"image": "🖼️", "record": "🎵", "video": "🎬"}.get(mtype, "📁")
+            icon = {"image": "🖼️", "record": "🔵", "video": "🎬"}.get(mtype, "📄")
             await event.send(event.plain_result(
                 f"📋 媒体 #{m_idx} 详情：\n"
                 f"  {icon} 类型: {mtype}\n"
@@ -968,7 +972,7 @@ class Main(Star):
         else:
             await event.send(event.plain_result(f"❌ 未知操作: {q_action}，可用: list / add / remove / info"))
 
-    # ==================== 组内 Mode 管理（v4.4 新增） ====================
+    # ==================== 组内 Mode 管理（v4.5 新增） ====================
 
     async def _handle_mode_admin(self, event: AstrMessageEvent, group: dict, group_name: str, groups: list, sub_arg: str):
         """处理组内回复模式设置"""
@@ -977,7 +981,7 @@ class Main(Star):
             lines = [f"📋 组「{group_name}」当前回复模式：{current}\n"]
             lines.append("可用模式：")
             for m in REPLY_MODES:
-                marker = " 👈 当前" if m == current else ""
+                marker = " ✅ 当前" if m == current else ""
                 lines.append(f"  {m} — {MODE_HELP.get(m, '')}{marker}")
             lines.append(f"\n💡 设置：/云原神管理 group {group_name} mode <模式名>")
             await event.send(event.plain_result("\n".join(lines)))
@@ -994,7 +998,7 @@ class Main(Star):
         group["reply_mode"] = new_mode
         self._save_data()
         await event.send(event.plain_result(
-            f"✅ 组「{group_name}」回复模式已设为: {new_mode}\n"
+            f"✅ 组「{group_name}」回复模式已设为：{new_mode}\n"
             f"  {MODE_HELP.get(new_mode, '')}"
         ))
 
@@ -1018,7 +1022,7 @@ class Main(Star):
                 return
             keywords.append(kw)
             self._save_data()
-            await event.send(event.plain_result(f"✅ 默认组已添加关键词「{kw}」，当前共 {len(keywords)} 个"))
+            await event.send(event.plain_result(f"✅ 默认组已添加关键词「{kw}」，共 {len(keywords)} 个"))
 
         elif subcmd == "remove":
             if len(parts) < 3 or not parts[2].strip():
@@ -1033,84 +1037,82 @@ class Main(Star):
             await event.send(event.plain_result(f"✅ 默认组已删除关键词「{kw}」，剩余 {len(keywords)} 个"))
 
         elif subcmd == "list":
-            lines = [f"📋 默认组关键词列表（共 {len(keywords)} 个）：\n"]
-            if keywords:
-                for i, kw in enumerate(keywords, 1):
-                    lines.append(f"  {i}. {kw}")
-            else:
-                lines.append("  （暂无）")
-            lines.append("\n💡 使用 group <组名> 管理其他组")
-            await event.send(event.plain_result("\n".join(lines)))
+            await event.send(event.plain_result(
+                f"📋 默认组关键词（共 {len(keywords)} 个）：\n" +
+                ("\n".join(f"  {i+1}. {kw}" for i, kw in enumerate(keywords)) if keywords else "  （暂无）")
+            ))
 
     async def _handle_first_reply_admin(self, event: AstrMessageEvent, parts: list):
-        """快捷首次回复词管理：操作第一个组"""
+        """快捷首次回复词管理"""
         group = self._get_default_group()
-        if len(parts) < 3:
+        if len(parts) < 3 or not parts[2].strip():
             current = group.get("first_reply", "欸，云朵")
             await event.send(event.plain_result(
                 f"📋 默认组当前首次回复词：\n「{current}」\n\n"
-                "💡 设置：/云原神管理 first_reply <新文本>\n"
-                "💡 其他组用：group <组名> first_reply <文本>"
+                f"💡 设置：/云原神管理 first_reply <新文本>"
             ))
             return
-        new_text = parts[2].strip()
-        if not new_text:
+        new_reply = parts[2].strip()
+        if not new_reply:
             await event.send(event.plain_result("❌ 首次回复词不能为空"))
             return
-        group["first_reply"] = new_text
+        group["first_reply"] = new_reply
         self._save_data()
-        await event.send(event.plain_result(f"✅ 默认组首次回复词已设为：\n「{new_text}」"))
+        await event.send(event.plain_result(f"✅ 默认组首次回复词已设为：\n「{new_reply}」"))
 
     async def _handle_quote_admin(self, event: AstrMessageEvent, parts: list):
-        """快捷梗段管理：操作第一个组"""
+        """快捷梗段管理"""
         group = self._get_default_group()
         quotes = group.get("quote_pool", [])
         if not isinstance(quotes, list):
             quotes = []
             group["quote_pool"] = quotes
 
-        if len(parts) < 3 or not parts[2].strip():
+        if len(parts) < 3:
             await event.send(event.plain_result(
-                "📋 默认组梗段管理：\n"
-                "  /云原神管理 quote list              — 列出梗段\n"
-                "  /云原神管理 quote add <梗段>        — 添加梗段\n"
-                "  /云原神管理 quote remove <编号>     — 删除梗段\n"
-                "  /云原神管理 quote set <编号> <内容>  — 修改梗段\n\n"
-                "💡 其他组用：group <组名> quote ...\n"
+                f"📋 默认组梗段管理：\n"
+                f"  /云原神管理 quote list           — 列出梗段\n"
+                f"  /云原神管理 quote add <梗段>     — 添加梗段\n"
+                f"  /云原神管理 quote remove <编号>  — 删除梗段\n"
+                f"  /云原神管理 quote set <编号> <内容> — 修改梗段\n\n"
                 f"当前共 {len(quotes)} 段梗"
             ))
             return
 
-        sub2 = parts[2].strip()
-        sub2_parts = sub2.split(maxsplit=1)
-        action = sub2_parts[0]
-        arg = sub2_parts[1].strip() if len(sub2_parts) > 1 else ""
+        rest = parts[2].strip()
+        q_parts = rest.split(maxsplit=1)
+        q_action = q_parts[0]
+        q_arg = q_parts[1] if len(q_parts) > 1 else ""
 
-        if action == "list":
+        if q_action == "list":
             lines = [f"🗂️ 默认组梗段词库（共 {len(quotes)} 段）：\n"]
             if quotes:
                 for i, q in enumerate(quotes, 1):
                     d = q[:40] + "…" if len(q) > 40 else q
                     lines.append(f"  {i}. {d}")
             else:
-                lines.append("  （暂无）")
+                lines.append("  （暂无梗段）")
             await event.send(event.plain_result("\n".join(lines)))
 
-        elif action == "add":
-            if not arg:
+        elif q_action == "add":
+            if not q_arg:
                 await event.send(event.plain_result("❌ 用法：/云原神管理 quote add <梗段>"))
                 return
-            quotes.append(arg.strip())
+            content = q_arg.strip()
+            group.setdefault("quote_pool", []).append(content)
             self._save_data()
-            d = arg[:30] + "…" if len(arg) > 30 else arg
-            await event.send(event.plain_result(f"✅ 默认组已添加梗段 #{len(quotes)}：\n「{d}」"))
+            d = content[:30] + "…" if len(content) > 30 else content
+            await event.send(event.plain_result(
+                f"✅ 默认组已添加梗段：\n「{d}」\n"
+                f"当前共 {len(group['quote_pool'])} 段"
+            ))
 
-        elif action == "remove":
-            if not arg:
+        elif q_action == "remove":
+            if not q_arg:
                 await event.send(event.plain_result("❌ 用法：/云原神管理 quote remove <编号>"))
                 return
             try:
-                q_idx = int(arg)
+                q_idx = int(q_arg.strip())
             except ValueError:
                 await event.send(event.plain_result("❌ 编号必须为数字"))
                 return
@@ -1120,10 +1122,12 @@ class Main(Star):
             removed = quotes.pop(q_idx - 1)
             self._save_data()
             d = removed[:30] + "…" if len(removed) > 30 else removed
-            await event.send(event.plain_result(f"✅ 默认组已删除梗段 #{q_idx}：\n「{d}」"))
+            await event.send(event.plain_result(
+                f"✅ 默认组已删除梗段 #{q_idx}：\n「{d}」\n剩余 {len(quotes)} 段"
+            ))
 
-        elif action == "set":
-            set_parts = arg.split(maxsplit=1)
+        elif q_action == "set":
+            set_parts = q_arg.split(maxsplit=1)
             if len(set_parts) < 2:
                 await event.send(event.plain_result("❌ 用法：/云原神管理 quote set <编号> <新内容>"))
                 return
@@ -1144,41 +1148,42 @@ class Main(Star):
             self._save_data()
             od = old[:20] + "…" if len(old) > 20 else old
             nd = new_content[:20] + "…" if len(new_content) > 20 else new_content
-            await event.send(event.plain_result(f"✅ 默认组已修改梗段 #{q_idx}：\n  旧: 「{od}」\n  新: 「{nd}」"))
+            await event.send(event.plain_result(
+                f"✅ 默认组已修改梗段 #{q_idx}：\n"
+                f"  旧: 「{od}」\n  新: 「{nd}」"
+            ))
         else:
-            await event.send(event.plain_result(f"❌ 未知操作: {action}，可用: list / add / remove / set"))
+            await event.send(event.plain_result(f"❌ 未知操作: {q_action}，可用: list / add / remove / set"))
 
-    # ==================== 快捷 Media 管理（v4.4 新增） ====================
+    # ==================== 快捷 Media 管理（v4.5 新增） ====================
 
     async def _handle_media_admin_quick(self, event: AstrMessageEvent, parts: list):
         """快捷媒体管理：操作第一个组"""
         group = self._get_default_group()
-        group_name = group.get("name", "默认组")
-        groups = self.data.get("match_groups", [])
+        mp = group.get("media_pool", [])
+        if not isinstance(mp, list):
+            mp = []
+            group["media_pool"] = mp
 
-        if len(parts) < 3 or not parts[2].strip():
-            mp = group.get("media_pool", [])
+        if len(parts) < 3:
             img_c = sum(1 for m in mp if m.get("type") == "image")
             rec_c = sum(1 for m in mp if m.get("type") == "record")
             vid_c = sum(1 for m in mp if m.get("type") == "video")
             await event.send(event.plain_result(
-                "📋 默认组媒体管理：\n"
-                "  /云原神管理 media list                    — 列出媒体\n"
-                "  /云原神管理 media add <type> <src> [source] — 添加媒体\n"
-                "  /云原神管理 media remove <编号>            — 删除媒体\n"
-                "  type: image/record/video, source: url(默认)/local\n\n"
-                f"当前共 {len(mp)} 个媒体 (图片{img_c} 语音{rec_c} 视频{vid_c})\n"
-                "💡 其他组用：group <组名> media ..."
+                f"📋 默认组媒体管理：\n"
+                f"  /云原神管理 media list           — 列出全部媒体\n"
+                f"  /云原神管理 media add <type> <src> [source] — 添加媒体\n"
+                f"  /云原神管理 media remove <编号>  — 删除媒体\n\n"
+                f"当前共 {len(mp)} 个媒体（图片{img_c} 语音{rec_c} 视频{vid_c}）"
             ))
             return
 
-        sub2 = parts[2].strip()
-        sub2_parts = sub2.split(maxsplit=1)
-        action = sub2_parts[0]
-        arg = sub2_parts[1].strip() if len(sub2_parts) > 1 else ""
+        rest = parts[2].strip()
+        q_parts = rest.split(maxsplit=1)
+        q_action = q_parts[0]
+        q_arg = q_parts[1] if len(q_parts) > 1 else ""
 
-        if action == "list":
-            mp = group.get("media_pool", [])
+        if q_action == "list":
             lines = [f"🗂️ 默认组媒体池（共 {len(mp)} 个）：\n"]
             if mp:
                 for i, m in enumerate(mp, 1):
@@ -1186,171 +1191,168 @@ class Main(Star):
                     src = m.get("src", "")
                     source = m.get("source", "url")
                     d = src[:40] + "…" if len(src) > 40 else src
-                    icon = {"image": "🖼️", "record": "🎵", "video": "🎬"}.get(mtype, "📁")
+                    icon = {"image": "🖼️", "record": "🔵", "video": "🎬"}.get(mtype, "📄")
                     lines.append(f"  {i}. {icon} [{mtype}] ({source}) {d}")
             else:
                 lines.append("  （暂无媒体）")
             await event.send(event.plain_result("\n".join(lines)))
 
-        elif action == "add":
-            # add <type> <src> [source]
-            add_parts = arg.split(maxsplit=2)
+        elif q_action == "add":
+            add_parts = q_arg.split(maxsplit=2)
             if len(add_parts) < 2:
-                await event.send(event.plain_result("❌ 用法：/云原神管理 media add <type> <src> [source]"))
+                await event.send(event.plain_result(
+                    "❌ 用法：/云原神管理 media add <type> <src> [source]\n"
+                    "  type: image/record/video, source: url(默认)/local"
+                ))
                 return
             mtype = add_parts[0].strip().lower()
             src = add_parts[1].strip()
             source = add_parts[2].strip().lower() if len(add_parts) > 2 else "url"
 
             if mtype not in MEDIA_TYPES:
-                await event.send(event.plain_result(f"❌ 类型必须为: {'/'.join(MEDIA_TYPES)}"))
+                await event.send(event.plain_result(f"❌ 类型不正确: {'/'.join(MEDIA_TYPES)}"))
                 return
             if source not in SOURCE_TYPES:
-                await event.send(event.plain_result(f"❌ 来源必须为: {'/'.join(SOURCE_TYPES)}"))
+                await event.send(event.plain_result(f"❌ 来源不正确: {'/'.join(SOURCE_TYPES)}"))
                 return
             if not src:
                 await event.send(event.plain_result("❌ 媒体地址不能为空"))
                 return
 
-            group.setdefault("media_pool", []).append({"type": mtype, "src": src, "source": source})
+            mp.append({"type": mtype, "src": src, "source": source})
+            group["media_pool"] = mp
             self._save_data()
-            icon = {"image": "🖼️", "record": "🎵", "video": "🎬"}.get(mtype, "📁")
+            icon = {"image": "🖼️", "record": "🔵", "video": "🎬"}.get(mtype, "📄")
             d = src[:40] + "…" if len(src) > 40 else src
             await event.send(event.plain_result(
-                f"✅ 默认组已添加媒体 #{len(group['media_pool'])}：\n"
+                f"✅ 默认组已添加媒体 #{len(mp)}：\n"
                 f"  {icon} [{mtype}] ({source}) {d}"
             ))
 
-        elif action == "remove":
-            if not arg:
+        elif q_action == "remove":
+            if not q_arg:
                 await event.send(event.plain_result("❌ 用法：/云原神管理 media remove <编号>"))
                 return
             try:
-                m_idx = int(arg)
+                m_idx = int(q_arg.strip())
             except ValueError:
                 await event.send(event.plain_result("❌ 编号必须为数字"))
                 return
-            mp = group.get("media_pool", [])
             if m_idx < 1 or m_idx > len(mp):
                 await event.send(event.plain_result(f"❌ 编号 {m_idx} 超出范围（1~{len(mp)}）"))
                 return
             removed = mp.pop(m_idx - 1)
+            group["media_pool"] = mp
             self._save_data()
             mtype = removed.get("type", "?")
             src = removed.get("src", "")
             d = src[:30] + "…" if len(src) > 30 else src
             await event.send(event.plain_result(
-                f"✅ 默认组已删除媒体 #{m_idx}：[{mtype}] {d}\n剩余 {len(mp)} 个媒体"
+                f"✅ 默认组已删除媒体 #{m_idx}：[{mtype}] {d}\n"
+                f"剩余 {len(mp)} 个媒体"
             ))
         else:
-            await event.send(event.plain_result(f"❌ 未知操作: {action}，可用: list / add / remove"))
+            await event.send(event.plain_result(f"❌ 未知操作: {q_action}，可用: list / add / remove"))
 
     async def _handle_mode_admin_quick(self, event: AstrMessageEvent, parts: list):
-        """快捷模式管理：操作第一个组"""
+        """快捷回复模式管理"""
         group = self._get_default_group()
-        group_name = group.get("name", "默认组")
 
         if len(parts) < 3 or not parts[2].strip():
             current = group.get("reply_mode", "mixed")
             lines = [f"📋 默认组当前回复模式：{current}\n"]
             lines.append("可用模式：")
             for m in REPLY_MODES:
-                marker = " 👈 当前" if m == current else ""
+                marker = " ✅ 当前" if m == current else ""
                 lines.append(f"  {m} — {MODE_HELP.get(m, '')}{marker}")
-            lines.append(f"\n💡 设置：/云原神管理 mode <模式名>\n💡 其他组用：group <组名> mode <模式名>")
+            lines.append("\n💡 设置：/云原神管理 mode <模式名>")
             await event.send(event.plain_result("\n".join(lines)))
             return
 
         new_mode = parts[2].strip().lower()
         if new_mode not in REPLY_MODES:
-            await event.send(event.plain_result(f"❌ 无效模式: {new_mode}，可用: {'/'.join(REPLY_MODES)}"))
+            await event.send(event.plain_result(
+                f"❌ 无效模式: {new_mode}，可用: {'/'.join(REPLY_MODES)}\n"
+                f"  text=纯文本, media=纯媒体, text_media=文本+媒体, media_text=媒体+文本, mixed=随机混合"
+            ))
             return
 
         group["reply_mode"] = new_mode
         self._save_data()
         await event.send(event.plain_result(
-            f"✅ 默认组回复模式已设为: {new_mode}\n{MODE_HELP.get(new_mode, '')}"
+            f"✅ 默认组回复模式已设为：{new_mode}\n"
+            f"  {MODE_HELP.get(new_mode, '')}"
         ))
 
     # ==================== 黑名单管理 ====================
 
     async def _handle_blacklist_admin(self, event: AstrMessageEvent, parts: list):
-        groups = self.data.get("blacklist_groups", [])
-        if not isinstance(groups, list):
-            groups = []
-            self.data["blacklist_groups"] = groups
+        """处理黑/白名单管理"""
+        blacklist = self.data.get("blacklist_groups", [])
+        if not isinstance(blacklist, list):
+            blacklist = []
+            self.data["blacklist_groups"] = blacklist
 
-        if len(parts) < 3 or not parts[2].strip():
+        if len(parts) < 3:
             mode = self.config.get("blacklist_mode", "blacklist")
             await event.send(event.plain_result(
-                f"📋 群组管理（当前模式: {mode}）：\n"
-                "  /云原神管理 blacklist add <群号>    — 添加群\n"
-                "  /云原神管理 blacklist remove <群号> — 移除群\n"
-                "  /云原神管理 blacklist list          — 列出群"
+                f"📋 群聊黑/白名单管理：\n"
+                f"  /云原神管理 blacklist add <群号>      — 添加到名单\n"
+                f"  /云原神管理 blacklist remove <群号>   — 从名单移除\n"
+                f"  /云原神管理 blacklist list            — 列出名单\n\n"
+                f"当前模式: {mode}（{'黑名单' if mode == 'blacklist' else '白名单'}）\n"
+                f"当前共 {len(blacklist)} 个群"
             ))
             return
 
-        sub2 = parts[2].strip()
-        sub2_parts = sub2.split(maxsplit=1)
-        action = sub2_parts[0]
-        arg = sub2_parts[1].strip() if len(sub2_parts) > 1 else ""
+        rest = parts[2].strip()
+        bl_parts = rest.split(maxsplit=1)
+        bl_action = bl_parts[0]
+        bl_arg = bl_parts[1] if len(bl_parts) > 1 else ""
 
-        if action == "add":
-            if not arg:
+        if bl_action == "add":
+            if not bl_arg:
                 await event.send(event.plain_result("❌ 用法：/云原神管理 blacklist add <群号>"))
                 return
-            gid = str(arg).strip()
-            if gid in groups:
-                await event.send(event.plain_result(f"⚠️ 群 {gid} 已在名单中"))
+            gid = bl_arg.strip().replace("群", "").strip()
+            if gid in blacklist:
+                await event.send(event.plain_result(f"⚠️ 群「{gid}」已在名单中"))
                 return
-            groups.append(gid)
+            blacklist.append(gid)
             self._save_data()
-            mode = self.config.get("blacklist_mode", "blacklist")
-            await event.send(event.plain_result(
-                f"✅ 已将群 {gid} 添加到{'黑' if mode == 'blacklist' else '白'}名单\n"
-                f"当前共 {len(groups)} 个群"
-            ))
+            await event.send(event.plain_result(f"✅ 已添加群「{gid}」到名单，当前共 {len(blacklist)} 个群"))
 
-        elif action == "remove":
-            if not arg:
+        elif bl_action == "remove":
+            if not bl_arg:
                 await event.send(event.plain_result("❌ 用法：/云原神管理 blacklist remove <群号>"))
                 return
-            gid = str(arg).strip()
-            if gid not in groups:
-                await event.send(event.plain_result(f"❌ 名单中未找到群 {gid}"))
+            gid = bl_arg.strip().replace("群", "").strip()
+            if gid not in blacklist:
+                await event.send(event.plain_result(f"❌ 群「{gid}」不在名单中"))
                 return
-            groups.remove(gid)
+            blacklist.remove(gid)
             self._save_data()
+            await event.send(event.plain_result(f"✅ 已移除群「{gid}」从名单，剩余 {len(blacklist)} 个群"))
+
+        elif bl_action == "list":
             mode = self.config.get("blacklist_mode", "blacklist")
             await event.send(event.plain_result(
-                f"✅ 已将群 {gid} 从{'黑' if mode == 'blacklist' else '白'}名单移除\n"
-                f"剩余 {len(groups)} 个群"
+                f"📋 群聊名单（共 {len(blacklist)} 个，模式: {mode}）：\n"
+                + ("\n".join(f"  {i+1}. {g}" for i, g in enumerate(blacklist)) if blacklist else "  （暂无）")
             ))
-
-        elif action == "list":
-            mode = self.config.get("blacklist_mode", "blacklist")
-            lines = [f"📋 群组{'黑' if mode == 'blacklist' else '白'}名单（共 {len(groups)} 个）：\n"]
-            if groups:
-                for i, g in enumerate(groups, 1):
-                    lines.append(f"  {i}. {g}")
-            else:
-                lines.append("  （暂无）")
-            lines.append(f"\n📌 模式: {mode} | blacklist=黑名单 whitelist=白名单")
-            await event.send(event.plain_result("\n".join(lines)))
         else:
-            await event.send(event.plain_result(f"❌ 未知操作: {action}，可用: add / remove / list"))
+            await event.send(event.plain_result(f"❌ 未知操作: {bl_action}，可用: add / remove / list"))
 
-    # ==================== 状态查看 ====================
+    # ==================== 状态命令 ====================
 
     async def _handle_status(self, event: AstrMessageEvent):
+        """查看插件状态总览"""
         groups = self.data.get("match_groups", [])
-        if not isinstance(groups, list): groups = []
-        bl = self.data.get("blacklist_groups", [])
-        if not isinstance(bl, list): bl = []
+        blacklist = self.data.get("blacklist_groups", [])
         trigger_enabled = self.config.get("enable_keyword_trigger", True)
         mode = self.config.get("blacklist_mode", "blacklist")
 
-        lines = ["📊 好想玩云原神🎊 v4.4 状态\n━━━━━━━━━━━━━━━━━━"]
+        lines = ["📊 好想玩云原神🎊 v4.5 状态\n━━━━━━━━━━━━━━━━━━"]
         lines.append(f"🔘 关键词触发: {'✅ 开启' if trigger_enabled else '❌ 关闭'}")
         lines.append(f"📦 匹配组: {len(groups)} 个\n")
 
@@ -1360,19 +1362,21 @@ class Main(Star):
             mp = g.get("media_pool", [])
             fr = g.get("first_reply", "")
             dl = g.get("reply_delay_ms", 800)
-            rmode = g.get("reply_mode", "mixed")
+            md = g.get("reply_mode", "mixed")
+            img_c = sum(1 for m in mp if m.get("type") == "image")
+            rec_c = sum(1 for m in mp if m.get("type") == "record")
+            vid_c = sum(1 for m in mp if m.get("type") == "video")
             lines.append(f"  {i}. 「{g.get('name', '?')}」")
-            lines.append(f"     🔑 {len(kw)}词 · 🎭 {len(qp)}段 · 🖼️ {len(mp)}媒体 · ⏱️ {dl}ms · {rmode}模式")
+            lines.append(f"     🔑 {len(kw)}词 · 🎭 {len(qp)}段 · 🖼️ {len(mp)}媒体({img_c}图/{rec_c}语/{vid_c}视) · {md} · {dl}ms")
             lines.append(f"     💬 「{fr}」")
 
-        lines.append(f"\n🚫 群名单模式: {mode}（{len(bl)} 个群）")
+        lines.append(f"\n🚫 黑/白名单: {mode}模式 ({len(blacklist)}个群)")
         lines.append("━━━━━━━━━━━━━━━━━━")
-        lines.append("💡 使用 /云原神管理 group 管理多组")
-        lines.append("📋 新模式: text/media/text_media/media_text/mixed")
         await event.send(event.plain_result("\n".join(lines)))
 
-    # ==================== 生命周期 ====================
+
+    # ==================== 清理 ====================
 
     async def terminate(self):
         self._save_data()
-        logger.info("🎊 好想玩云原神🎊 v4.4 已卸载，数据已保存")
+        logger.info("🎊 好想玩云原神🎊 v4.5 已卸载，数据已保存")
