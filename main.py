@@ -27,11 +27,23 @@ MODE_HELP = {
 # ==================== 默认匹配组工厂 ====================
 
 def _make_default_group(config: AstrBotConfig) -> dict:
+    dng = config.get("default_new_group", None)
+    if dng is not None and isinstance(dng, dict):
+        return {
+            "name": "默认组",
+            "keywords": list(dng.get("keywords", ["云朵", "云原神"])),
+            "first_reply": str(dng.get("first_reply", "欸，云朵") or "欸，云朵"),
+            "quote_pool": list(dng.get("quote_pool", [])),
+            "reply_delay_ms": dng.get("reply_delay_ms", 800),
+            "media_pool": list(dng.get("media_pool", [])),
+            "reply_mode": dng.get("reply_mode", "mixed")
+        }
+    # 兜底：硬编码默认值
     return {
         "name": "默认组",
-        "keywords": config.get("trigger_keywords", ["云朵", "云原神"]),
-        "first_reply": str(config.get("first_reply", "欸，云朵") or "欸，云朵"),
-        "quote_pool": config.get("quote_pool", [
+        "keywords": ["云朵", "云原神"],
+        "first_reply": "欸，云朵",
+        "quote_pool": [
             "啊😲？云朵☁️😄，哒↘哒↗哒↘哒↗哒↘，好想玩原神😨，云☁️原神😙",
             "当当当当当😊，看精彩纷纷👍🎊😆，云☁️原神😄，呜呜呜呜呜，好想玩原神😭😭😭云☁️原神",
             "朋友已就位😊😃😆，一起玩原神，云☁️原神！啊啊啊啊啊😙，好想玩原神😙云☁️原神，哈哈哈哈哈🤣🤣🤣，一起玩原神",
@@ -43,8 +55,8 @@ def _make_default_group(config: AstrBotConfig) -> dict:
             "冲出了云层，也想玩原神！✌🏻🤪 / 云原神！！！",
             "低延迟高像素，随时玩原神～😤👌🏻 / 云原神！",
             "小体积大用处，快快玩原神～🙄🤚🏻 / 云原神！/ 好 好 好想，"
-        ]),
-        "reply_delay_ms": config.get("reply_delay_ms", 800),
+        ],
+        "reply_delay_ms": 800,
         "media_pool": [],
         "reply_mode": "mixed"
     }
@@ -124,7 +136,7 @@ class Main(Star):
                                 "keywords": old_kw,
                                 "first_reply": old_fr,
                                 "quote_pool": old_qp,
-                                "reply_delay_ms": self.config.get("reply_delay_ms", 800),
+                                "reply_delay_ms": default_group["reply_delay_ms"],
                                 "media_pool": [],
                                 "reply_mode": "mixed"
                             }]
@@ -152,7 +164,7 @@ class Main(Star):
             if "quote_pool" not in g or not isinstance(g["quote_pool"], list):
                 g["quote_pool"] = list(default_group["quote_pool"])
             if "reply_delay_ms" not in g or not isinstance(g["reply_delay_ms"], (int, float)):
-                g["reply_delay_ms"] = self.config.get("reply_delay_ms", 800)
+                g["reply_delay_ms"] = default_group["reply_delay_ms"]
             # v4.3 新增字段
             if "media_pool" not in g or not isinstance(g["media_pool"], list):
                 g["media_pool"] = []
@@ -167,41 +179,18 @@ class Main(Star):
         data["blacklist_groups"] = bl
 
         # ====== 面板配置 → 全量同步 ======
-        # 优先级：面板 match_groups（全量）> 面板各独立字段（仅默认组）
+        # 面板 match_groups 优先级最高，有则全量覆盖
         panel_mg = self.config.get("match_groups", None)
         if panel_mg is not None and isinstance(panel_mg, list) and len(panel_mg) > 0:
-            # 面板有全量 match_groups，用面板配置全覆盖
             data["match_groups"] = copy.deepcopy(panel_mg)
             logger.info(f"🎊 面板配置 match_groups 已全量同步（{len(panel_mg)} 个组）")
-        elif data["match_groups"]:
-            # 面板没有 match_groups，用各独立字段仅刷新默认组
-            default = data["match_groups"][0]
-            kw = self.config.get("trigger_keywords", None)
-            if kw is not None and isinstance(kw, list):
-                default["keywords"] = list(kw)
-            fr = self.config.get("first_reply", None)
-            if fr is not None and isinstance(fr, str):
-                default["first_reply"] = fr
-            dl = self.config.get("reply_delay_ms", None)
-            if dl is not None and isinstance(dl, (int, float)):
-                default["reply_delay_ms"] = dl
-            qp = self.config.get("quote_pool", None)
-            if qp is not None and isinstance(qp, list):
-                default["quote_pool"] = list(qp)
-            rm = self.config.get("reply_mode", None)
-            if rm is not None and rm in REPLY_MODES:
-                default["reply_mode"] = rm
-            mp = self.config.get("media_pool", None)
-            if mp is not None and isinstance(mp, list):
-                default["media_pool"] = list(mp)
 
         return data
 
     def _sync_config_to_data(self):
         """将面板配置同步到所有匹配组（运行时调用）。
         
-        优先使用面板的 match_groups 全量覆盖 data.json；
-        若无则用各独立字段仅同步默认组。
+        面板配置有 match_groups 则全量覆盖，否则提示用户先设置面板配置。
         """
         panel_mg = self.config.get("match_groups", None)
         if panel_mg is not None and isinstance(panel_mg, list) and len(panel_mg) > 0:
@@ -219,24 +208,7 @@ class Main(Star):
             self._save_data()
             logger.info(f"🎊 configsync: 面板 match_groups 已全量同步（{len(panel_mg)} 个组）")
         else:
-            # 无面板 match_groups，仅同步默认组各独立字段
-            groups = self.data.get("match_groups", [])
-            if not groups:
-                return
-            default = groups[0]
-            kw = self.config.get("trigger_keywords", None)
-            if kw is not None and isinstance(kw, list): default["keywords"] = list(kw)
-            fr = self.config.get("first_reply", None)
-            if fr is not None and isinstance(fr, str): default["first_reply"] = fr
-            dl = self.config.get("reply_delay_ms", None)
-            if dl is not None and isinstance(dl, (int, float)): default["reply_delay_ms"] = dl
-            qp = self.config.get("quote_pool", None)
-            if qp is not None and isinstance(qp, list): default["quote_pool"] = list(qp)
-            rm = self.config.get("reply_mode", None)
-            if rm is not None and rm in REPLY_MODES: default["reply_mode"] = rm
-            mp = self.config.get("media_pool", None)
-            if mp is not None and isinstance(mp, list): default["media_pool"] = list(mp)
-            self._save_data()
+            logger.warning("🎊 configsync: 面板中未配置 match_groups，跳过同步（请在 AstrBot 面板中编辑 match_groups）")
 
     def _save_data_inner(self, data: dict):
         try:
@@ -492,7 +464,7 @@ class Main(Star):
                 "  /云原神管理 mode <模式>\n"
                 "  /云原神管理 blacklist add/remove/list\n"
                 "  /云原神管理 status\n"
-                "  /云原神管理 configsync — 同步面板配置到默认组"
+                "  /云原神管理 configsync — 同步面板 match_groups 到插件"
             )
             return
 
@@ -527,7 +499,7 @@ class Main(Star):
             return
         if subcmd == "configsync":
             self._sync_config_to_data()
-            yield event.plain_result("✅ 面板配置已同步到默认组！")
+            yield event.plain_result("✅ 面板配置 match_groups 已全量同步到插件！")
             return
 
         yield event.plain_result(

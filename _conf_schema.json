@@ -6,59 +6,35 @@
     "default": true
   },
   "match_groups": {
-    "description": "所有匹配组配置（面板全量管理）",
+    "description": "匹配组列表：在面板中编辑所有组的完整配置",
     "type": "list",
-    "hint": "每项为完整组对象：{name, keywords, first_reply, quote_pool, reply_delay_ms, media_pool, reply_mode}。修改后执行 /云原神管理 configsync 即可同步到插件。下方各独立字段仅在新建组时作为默认值使用",
+    "hint": "每一项为完整组对象：{name, keywords, first_reply, quote_pool, reply_delay_ms, media_pool, reply_mode}。修改后执行 /云原神管理 configsync 立即生效，或重启插件生效",
     "default": []
   },
-  "trigger_keywords": {
-    "description": "新建组默认 · 触发关键词列表",
-    "type": "list",
-    "hint": "创建新组时作为默认关键词，已有组不受影响",
-    "default": ["云朵", "云原神"]
-  },
-  "first_reply": {
-    "description": "新建组默认 · 首次回复词",
-    "type": "string",
-    "hint": "创建新组时作为默认首次回复词，已有组不受影响",
-    "default": "欸，云朵"
-  },
-  "reply_delay_ms": {
-    "description": "新建组默认 · 回复延迟毫秒数",
-    "type": "int",
-    "hint": "创建新组时作为默认回复延迟，已有组不受影响",
-    "default": 800
-  },
-  "quote_pool": {
-    "description": "新建组默认 · 梗段词库",
-    "type": "list",
-    "hint": "创建新组时作为默认梗段库，已有组不受影响",
-    "default": [
-      "啊😲？云朵☁️😄，哒↘哒↗哒↘哒↗哒↘，好想玩原神😨，云☁️原神😙",
-      "当当当当当😊，看精彩纷纷👍🎊😆，云☁️原神😄，呜呜呜呜呜，好想玩原神😭😭😭云☁️原神",
-      "朋友已就位😊😃😆，一起玩原神，云☁️原神！啊啊啊啊啊😙，好想玩原神😙云☁️原神，哈哈哈哈哈🤣🤣🤣，一起玩原神",
-      "云☁️原神，好好好想，🤩想玩玩原神😋网页云端，低功耗不失真😌，WiFi网线🥰，都可以60帧😍",
-      "来来来来👏，进入云☁️原神",
-      "空间快爆炸，好想玩原神～✌🏻😀 / 云原神！",
-      "进度软趴趴，好想玩原神～😀👌🏻 / 云原神！",
-      "潜入了深海，想玩原神～🥴👍🏻 / 云原神！",
-      "冲出了云层，也想玩原神！✌🏻🤪 / 云原神！！！",
-      "低延迟高像素，随时玩原神～😤👌🏻 / 云原神！",
-      "小体积大用处，快快玩原神～🙄🤚🏻 / 云原神！/ 好 好 好想，"
-    ]
-  },
-  "reply_mode": {
-    "description": "新建组默认 · 回复模式",
-    "type": "string",
-    "hint": "text/media/text_media/media_text/mixed。创建新组时作为默认回复模式，已有组不受影响",
-    "default": "mixed",
-    "options": ["text", "media", "text_media", "media_text", "mixed"]
-  },
-  "media_pool": {
-    "description": "新建组默认 · 媒体池",
-    "type": "list",
-    "hint": "创建新组时作为默认媒体池，已有组不受影响",
-    "default": []
+  "default_new_group": {
+    "description": "新建组的默认模板：使用管理命令新建组时以此模板填充",
+    "type": "object",
+    "hint": "新建组时自动从此模板拷贝字段，已有组不受影响",
+    "default": {
+      "keywords": ["云朵", "云原神"],
+      "first_reply": "欸，云朵",
+      "quote_pool": [
+        "啊😲？云朵☁️😄，哒↘哒↗哒↘哒↗哒↘，好想玩原神😨，云☁️原神😙",
+        "当当当当当😊，看精彩纷纷👍🎊😆，云☁️原神😄，呜呜呜呜呜，好想玩原神😭😭😭云☁️原神",
+        "朋友已就位😊😃😆，一起玩原神，云☁️原神！啊啊啊啊啊😙，好想玩原神😙云☁️原神，哈哈哈哈哈🤣🤣🤣，一起玩原神",
+        "云☁️原神，好好好想，🤩想玩玩原神😋网页云端，低功耗不失真😌，WiFi网线🥰，都可以60帧😍",
+        "来来来来👏，进入云☁️原神",
+        "空间快爆炸，好想玩原神～✌🏻😀 / 云原神！",
+        "进度软趴趴，好想玩原神～😀👌🏻 / 云原神！",
+        "潜入了深海，想玩原神～🥴👍🏻 / 云原神！",
+        "冲出了云层，也想玩原神！✌🏻🤪 / 云原神！！！",
+        "低延迟高像素，随时玩原神～😤👌🏻 / 云原神！",
+        "小体积大用处，快快玩原神～🙄🤚🏻 / 云原神！/ 好 好 好想，"
+      ],
+      "reply_delay_ms": 800,
+      "media_pool": [],
+      "reply_mode": "mixed"
+    }
   },
   "blacklist_mode": {
     "description": "群聊黑/白名单模式",
