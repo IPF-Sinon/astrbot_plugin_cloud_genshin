@@ -5,34 +5,28 @@
     "hint": "关闭后只有手动输入 /云原神 才会回复",
     "default": true
   },
-  "match_groups": {
-    "description": "匹配组配置（v4.0 核心功能）",
-    "type": "list",
-    "hint": "每组含 keywords、first_reply、quote_pool、reply_delay_ms、media_pool（媒体池）、reply_mode（回复模式）。首次启动时下方各配置项会合并为一个默认组。之后全部由管理命令 /云原神管理 group 操控",
-    "default": []
-  },
-  "first_reply": {
-    "description": "【首次安装初始值】首次回复词",
-    "type": "string",
-    "hint": "仅首次安装时使用，启动后由 match_groups 接管",
-    "default": "欸，云朵"
-  },
   "trigger_keywords": {
-    "description": "【首次安装初始值】触发关键词列表",
+    "description": "默认组 · 触发关键词列表",
     "type": "list",
-    "hint": "仅首次安装时使用，启动后由 match_groups 接管",
+    "hint": "在此修改后重启插件或执行 /云原神管理 configsync 即可同步到默认组",
     "default": ["云朵", "云原神"]
   },
+  "first_reply": {
+    "description": "默认组 · 首次回复词",
+    "type": "string",
+    "hint": "在此修改后重启插件或执行 /云原神管理 configsync 即可同步到默认组",
+    "default": "欸，云朵"
+  },
   "reply_delay_ms": {
-    "description": "【首次安装初始值】默认回复延迟毫秒数",
+    "description": "默认组 · 回复延迟毫秒数",
     "type": "int",
-    "hint": "仅首次安装时使用，启动后由 match_groups 中的各组独立控制",
+    "hint": "在此修改后重启插件或执行 /云原神管理 configsync 即可同步到默认组",
     "default": 800
   },
   "quote_pool": {
-    "description": "【首次安装初始值】默认梗段词库",
+    "description": "默认组 · 梗段词库",
     "type": "list",
-    "hint": "仅首次安装时使用，启动后由 match_groups 各组独立管理",
+    "hint": "在此修改后重启插件或执行 /云原神管理 configsync 即可同步到默认组",
     "default": [
       "啊😲？云朵☁️😄，哒↘哒↗哒↘哒↗哒↘，好想玩原神😨，云☁️原神😙",
       "当当当当当😊，看精彩纷纷👍🎊😆，云☁️原神😄，呜呜呜呜呜，好想玩原神😭😭😭云☁️原神",
@@ -48,29 +42,29 @@
     ]
   },
   "reply_mode": {
-    "description": "【首次安装初始值】默认回复模式",
+    "description": "默认组 · 回复模式",
     "type": "string",
-    "hint": "text（纯文本）/ media（纯媒体）/ text_media（文本+媒体）/ media_text（媒体+文本）/ mixed（随机混合，默认）。首次启动后由 match_groups 中各组的 reply_mode 接管",
+    "hint": "text（纯文本）/ media（纯媒体）/ text_media（文本+媒体）/ media_text（媒体+文本）/ mixed（随机混合，默认）。在此修改后重启插件或执行 /云原神管理 configsync 即可同步到默认组",
     "default": "mixed",
     "options": ["text", "media", "text_media", "media_text", "mixed"]
   },
   "media_pool": {
-    "description": "【首次安装初始值】默认媒体池",
+    "description": "默认组 · 媒体池",
     "type": "list",
-    "hint": "每项为{\"type\":\"image|record|video\", \"src\":\"URL或路径\", \"source\":\"url|local\"}。仅首次安装时使用，启动后由 match_groups 各组独立管理",
+    "hint": "每项为{\"type\":\"image|record|video\",\"src\":\"URL或路径\",\"source\":\"url|local\"}。在此修改后重启插件或执行 /云原神管理 configsync 即可同步到默认组",
     "default": []
   },
   "blacklist_mode": {
-    "description": "群聊黑名单模式",
+    "description": "群聊黑/白名单模式",
     "type": "string",
-    "hint": "仅黑名单中的群聊不触发（blacklist）/ 仅白名单中的群聊触发（whitelist）",
+    "hint": "blacklist（黑名单模式，名单中的群不触发）/ whitelist（白名单模式，仅名单中的群触发）",
     "default": "blacklist",
     "options": ["blacklist", "whitelist"]
   },
   "blacklist_groups": {
-    "description": "【首次安装初始值】群组黑/白名单列表",
+    "description": "群聊黑/白名单列表",
     "type": "list",
-    "hint": "仅首次安装时使用，启动后由管理命令管理",
+    "hint": "在此修改后重启插件生效",
     "default": []
   }
 }
