@@ -1,6 +1,12 @@
 # 🎊 好想玩云原神🎊 更新日志
 
-## [4.4.0] - 2026-06-14
+## [4.5.0] - 2026-06-14
+
+### 🐛 修复：AstrBot 配置兼容
+- **修复 `_conf_schema.json` 中 `default_new_group` 的 `type` 问题**：AstrBot 面板不支持 `type: object`，导致加载插件时报错 `'items'`。改为 `type: list`，数据格式为 `[{...}]`
+- **`_make_default_group()` 兼容 list/dict 读取**：同时支持 `[{}]`（新版面板格式）和 `{}`（旧版兼容格式），新建组模板正常生效
+
+## [4.4.0] - 2026-06-14 (已归档)
 
 ### 🎯 配置彻底简化
 - **去除所有散落独立字段**：之前有 `trigger_keywords`、`first_reply`、`quote_pool` 等6个独立字段，现在全部删除。面板配置仅保留 `match_groups`（全量组编辑）+ `default_new_group`（新建组模板）两个入口
