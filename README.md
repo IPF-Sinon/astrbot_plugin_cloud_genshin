@@ -1,4 +1,4 @@
-# 🎊 好想玩云原神🎊 v4.4 — 多媒体 · 灵活回复模式
+# 🎊 好想玩云原神🎊 v4.5 — 多媒体 · 灵活回复模式
 
 > "啊😲？云朵☁️😄，哒↘哒↗哒↘哒↗哒↘，好想玩原神😨……"
 
@@ -19,7 +19,7 @@
 | 💬 **手动命令** | `/云原神` / `/cloudys` 从第一组随机回复 |
 | 🔧 **管理命令体系** | 丰富的 `group` 子命令管理多组：增删改查、命名、配置、媒体、模式 |
 | 🚫 **群聊黑/白名单** | 全局统一，所有组共享 |
-| 🔄 **面板配置实时生效** | 修改 AstrBot 面板配置后，重启插件或执行 `/云原神管理 configsync` 即可同步到默认组 |
+| 🔄 **面板配置实时生效** | 修改 AstrBot 面板配置后，重启插件或执行 `/云原神管理 configsync` 即可同步到所有组 |
 | 📥 **v2.x/v3.x 自动迁移** | 旧版 data.json 自动迁移到 v4.x 格式 |
 
 ---
@@ -88,7 +88,7 @@
 | `/云原神管理 blacklist remove <群号>` | 从名单移除 |
 | `/云原神管理 blacklist list` | 列出名单 |
 | `/云原神管理 status` | 查看全部状态 |
-| `/云原神管理 configsync` | 将面板配置同步到默认组 |
+| `/云原神管理 configsync` | 将面板配置同步到插件 |
 
 ### 命令示例
 
@@ -120,13 +120,11 @@ AstrBot 管理面板的各个配置项 **修改后重启插件或执行 `/云原
 |--------|------|------|
 | `enable_keyword_trigger` | bool | 主开关 |
 | `blacklist_mode` | string | 黑/白名单模式（blacklist/whitelist） |
-| `trigger_keywords` | list | 默认组 · 触发关键词 |
-| `first_reply` | string | 默认组 · 首次回复词 |
-| `reply_delay_ms` | int | 默认组 · 回复延迟（毫秒） |
-| `quote_pool` | list | 默认组 · 梗段词库 |
-| `reply_mode` | string | 默认组 · 回复模式（text/media/text_media/media_text/mixed） |
-| `media_pool` | list | 默认组 · 媒体池 |
+| `match_groups` | list | 全量匹配组，在面板编辑所有组的完整配置 |
+| `default_new_group` | list | 新建组模板，管理命令新建组时自动拷贝 |
 | `blacklist_groups` | list | 群聊黑/白名单列表 |
+
+> ⚠️ v4.5 已去除 `trigger_keywords`、`first_reply`、`quote_pool`、`reply_delay_ms`、`media_pool`、`reply_mode` 等独立字段。所有组的配置通过 `match_groups` 全量编辑，新建组时从 `default_new_group` 自动拷贝模板。
 
 ---
 
@@ -170,7 +168,7 @@ AstrBot 管理面板的各个配置项 **修改后重启插件或执行 `/云原
 
 - **插件名**: 好想玩云原神🎊
 - **作者**: 极夜System
-- **版本**: 4.4.0
+- **版本**: 4.5.0
 - **兼容**: AstrBot v3.5+
 - **分类**: 娱乐 / 梗
 
