@@ -6,9 +6,9 @@
     "default": true
   },
   "match_groups": {
-    "description": "匹配组配置（v3.0 核心功能）",
+    "description": "匹配组配置（v4.0 核心功能）",
     "type": "list",
-    "hint": "每组包含 keywords（触发关键词）、first_reply（首次回复词）、quote_pool（梗段词库）、reply_delay_ms（延迟毫秒）。首次启动时下方各配置项会合并为一个默认组。之后全部由管理命令 /云原神管理 group 操控",
+    "hint": "每组含 keywords、first_reply、quote_pool、reply_delay_ms、media_pool（媒体池）、reply_mode（回复模式）。首次启动时下方各配置项会合并为一个默认组。之后全部由管理命令 /云原神管理 group 操控",
     "default": []
   },
   "first_reply": {
@@ -46,6 +46,19 @@
       "低延迟高像素，随时玩原神～😤👌🏻 / 云原神！",
       "小体积大用处，快快玩原神～🙄🤚🏻 / 云原神！/ 好 好 好想，"
     ]
+  },
+  "reply_mode": {
+    "description": "【首次安装初始值】默认回复模式",
+    "type": "string",
+    "hint": "text（纯文本）/ media（纯媒体）/ text_media（文本+媒体）/ media_text（媒体+文本）/ mixed（随机混合，默认）。首次启动后由 match_groups 中各组的 reply_mode 接管",
+    "default": "mixed",
+    "options": ["text", "media", "text_media", "media_text", "mixed"]
+  },
+  "media_pool": {
+    "description": "【首次安装初始值】默认媒体池",
+    "type": "list",
+    "hint": "每项为{\"type\":\"image|record|video\", \"src\":\"URL或路径\", \"source\":\"url|local\"}。仅首次安装时使用，启动后由 match_groups 各组独立管理",
+    "default": []
   },
   "blacklist_mode": {
     "description": "群聊黑名单模式",
