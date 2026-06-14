@@ -166,11 +166,16 @@ class Main(Star):
         if not isinstance(bl, list): bl = []
         data["blacklist_groups"] = bl
 
-        # ====== 面板配置 → 默认组同步 ======
-        # 每次启动时用面板配置刷新默认组，确保面板修改后重启即生效
-        if data["match_groups"]:
+        # ====== 面板配置 → 全量同步 ======
+        # 优先级：面板 match_groups（全量）> 面板各独立字段（仅默认组）
+        panel_mg = self.config.get("match_groups", None)
+        if panel_mg is not None and isinstance(panel_mg, list) and len(panel_mg) > 0:
+            # 面板有全量 match_groups，用面板配置全覆盖
+            data["match_groups"] = copy.deepcopy(panel_mg)
+            logger.info(f"🎊 面板配置 match_groups 已全量同步（{len(panel_mg)} 个组）")
+        elif data["match_groups"]:
+            # 面板没有 match_groups，用各独立字段仅刷新默认组
             default = data["match_groups"][0]
-            # 只同步面板上有对应项的字段
             kw = self.config.get("trigger_keywords", None)
             if kw is not None and isinstance(kw, list):
                 default["keywords"] = list(kw)
@@ -193,30 +198,45 @@ class Main(Star):
         return data
 
     def _sync_config_to_data(self):
-        """将面板配置同步到默认组（运行时调用）"""
-        groups = self.data.get("match_groups", [])
-        if not groups:
-            return
-        default = groups[0]
-        kw = self.config.get("trigger_keywords", None)
-        if kw is not None and isinstance(kw, list):
-            default["keywords"] = list(kw)
-        fr = self.config.get("first_reply", None)
-        if fr is not None and isinstance(fr, str):
-            default["first_reply"] = fr
-        dl = self.config.get("reply_delay_ms", None)
-        if dl is not None and isinstance(dl, (int, float)):
-            default["reply_delay_ms"] = dl
-        qp = self.config.get("quote_pool", None)
-        if qp is not None and isinstance(qp, list):
-            default["quote_pool"] = list(qp)
-        rm = self.config.get("reply_mode", None)
-        if rm is not None and rm in REPLY_MODES:
-            default["reply_mode"] = rm
-        mp = self.config.get("media_pool", None)
-        if mp is not None and isinstance(mp, list):
-            default["media_pool"] = list(mp)
-        self._save_data()
+        """将面板配置同步到所有匹配组（运行时调用）。
+        
+        优先使用面板的 match_groups 全量覆盖 data.json；
+        若无则用各独立字段仅同步默认组。
+        """
+        panel_mg = self.config.get("match_groups", None)
+        if panel_mg is not None and isinstance(panel_mg, list) and len(panel_mg) > 0:
+            # 全量同步：面板 match_groups → data.json
+            self.data["match_groups"] = copy.deepcopy(panel_mg)
+            # 校验补全字段
+            for g in self.data["match_groups"]:
+                if "name" not in g or not g["name"]: g["name"] = "未命名组"
+                if "keywords" not in g or not isinstance(g["keywords"], list): g["keywords"] = []
+                if "first_reply" not in g or not g["first_reply"]: g["first_reply"] = "欸，云朵"
+                if "quote_pool" not in g or not isinstance(g["quote_pool"], list): g["quote_pool"] = []
+                if "reply_delay_ms" not in g or not isinstance(g["reply_delay_ms"], (int, float)): g["reply_delay_ms"] = 800
+                if "media_pool" not in g or not isinstance(g["media_pool"], list): g["media_pool"] = []
+                if "reply_mode" not in g or g["reply_mode"] not in REPLY_MODES: g["reply_mode"] = "mixed"
+            self._save_data()
+            logger.info(f"🎊 configsync: 面板 match_groups 已全量同步（{len(panel_mg)} 个组）")
+        else:
+            # 无面板 match_groups，仅同步默认组各独立字段
+            groups = self.data.get("match_groups", [])
+            if not groups:
+                return
+            default = groups[0]
+            kw = self.config.get("trigger_keywords", None)
+            if kw is not None and isinstance(kw, list): default["keywords"] = list(kw)
+            fr = self.config.get("first_reply", None)
+            if fr is not None and isinstance(fr, str): default["first_reply"] = fr
+            dl = self.config.get("reply_delay_ms", None)
+            if dl is not None and isinstance(dl, (int, float)): default["reply_delay_ms"] = dl
+            qp = self.config.get("quote_pool", None)
+            if qp is not None and isinstance(qp, list): default["quote_pool"] = list(qp)
+            rm = self.config.get("reply_mode", None)
+            if rm is not None and rm in REPLY_MODES: default["reply_mode"] = rm
+            mp = self.config.get("media_pool", None)
+            if mp is not None and isinstance(mp, list): default["media_pool"] = list(mp)
+            self._save_data()
 
     def _save_data_inner(self, data: dict):
         try:

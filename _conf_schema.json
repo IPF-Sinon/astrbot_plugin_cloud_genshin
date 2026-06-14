@@ -5,28 +5,34 @@
     "hint": "关闭后只有手动输入 /云原神 才会回复",
     "default": true
   },
-  "trigger_keywords": {
-    "description": "默认组 · 触发关键词列表",
+  "match_groups": {
+    "description": "所有匹配组配置（面板全量管理）",
     "type": "list",
-    "hint": "在此修改后重启插件或执行 /云原神管理 configsync 即可同步到默认组",
+    "hint": "每项为完整组对象：{name, keywords, first_reply, quote_pool, reply_delay_ms, media_pool, reply_mode}。修改后执行 /云原神管理 configsync 即可同步到插件。下方各独立字段仅在新建组时作为默认值使用",
+    "default": []
+  },
+  "trigger_keywords": {
+    "description": "新建组默认 · 触发关键词列表",
+    "type": "list",
+    "hint": "创建新组时作为默认关键词，已有组不受影响",
     "default": ["云朵", "云原神"]
   },
   "first_reply": {
-    "description": "默认组 · 首次回复词",
+    "description": "新建组默认 · 首次回复词",
     "type": "string",
-    "hint": "在此修改后重启插件或执行 /云原神管理 configsync 即可同步到默认组",
+    "hint": "创建新组时作为默认首次回复词，已有组不受影响",
     "default": "欸，云朵"
   },
   "reply_delay_ms": {
-    "description": "默认组 · 回复延迟毫秒数",
+    "description": "新建组默认 · 回复延迟毫秒数",
     "type": "int",
-    "hint": "在此修改后重启插件或执行 /云原神管理 configsync 即可同步到默认组",
+    "hint": "创建新组时作为默认回复延迟，已有组不受影响",
     "default": 800
   },
   "quote_pool": {
-    "description": "默认组 · 梗段词库",
+    "description": "新建组默认 · 梗段词库",
     "type": "list",
-    "hint": "在此修改后重启插件或执行 /云原神管理 configsync 即可同步到默认组",
+    "hint": "创建新组时作为默认梗段库，已有组不受影响",
     "default": [
       "啊😲？云朵☁️😄，哒↘哒↗哒↘哒↗哒↘，好想玩原神😨，云☁️原神😙",
       "当当当当当😊，看精彩纷纷👍🎊😆，云☁️原神😄，呜呜呜呜呜，好想玩原神😭😭😭云☁️原神",
@@ -42,16 +48,16 @@
     ]
   },
   "reply_mode": {
-    "description": "默认组 · 回复模式",
+    "description": "新建组默认 · 回复模式",
     "type": "string",
-    "hint": "text（纯文本）/ media（纯媒体）/ text_media（文本+媒体）/ media_text（媒体+文本）/ mixed（随机混合，默认）。在此修改后重启插件或执行 /云原神管理 configsync 即可同步到默认组",
+    "hint": "text/media/text_media/media_text/mixed。创建新组时作为默认回复模式，已有组不受影响",
     "default": "mixed",
     "options": ["text", "media", "text_media", "media_text", "mixed"]
   },
   "media_pool": {
-    "description": "默认组 · 媒体池",
+    "description": "新建组默认 · 媒体池",
     "type": "list",
-    "hint": "每项为{\"type\":\"image|record|video\",\"src\":\"URL或路径\",\"source\":\"url|local\"}。在此修改后重启插件或执行 /云原神管理 configsync 即可同步到默认组",
+    "hint": "创建新组时作为默认媒体池，已有组不受影响",
     "default": []
   },
   "blacklist_mode": {
