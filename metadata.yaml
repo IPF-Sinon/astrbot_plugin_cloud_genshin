@@ -1,6 +1,6 @@
 name: astrbot_plugin_cloud_genshin
 author: 极夜System
 display_name: 好想玩云原神🎊
-version: 3.0.0
-description: 🎊「好想玩云原神🎊」v3.0 — 多匹配组云原神梗插件，支持创建多个匹配组，每组独立配置关键词、首次回复词、梗段词库和延迟，消息自动匹配合适组回复
+version: 4.0.0
+description: 🎊「好想玩云原神🎊」v4.0 — 多媒体 · 灵活回复模式，每组独立配置文本梗段+媒体池（图片/语音/视频）+5种回复模式（text/media/text_media/media_text/mixed），URL/本地双支持
 repo: https://github.com/IPF-Sinon/astrbot_plugin_cloud_genshin
