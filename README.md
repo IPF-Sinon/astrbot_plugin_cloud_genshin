@@ -1,8 +1,8 @@
-# 🎊 好想玩云原神🎊 v4.1 — 多媒体 · 灵活回复模式
+# 🎊 好想玩云原神🎊 v4.2 — 多媒体 · 灵活回复模式
 
 > "啊😲？云朵☁️😄，哒↘哒↗哒↘哒↗哒↘，好想玩原神😨……"
 
-一个 AstrBot 插件，自动检测关键词并回复经典云原神梗。**v4.1 重磅升级**：支持多媒体发送（图片/语音/视频）+ 5种灵活回复模式！每组可独立配置文本梗段池 + 媒体池 + 回复模式，消息匹配到哪组就用哪组的配置回复，互不干扰。
+一个 AstrBot 插件，自动检测关键词并回复经典云原神梗。支持多媒体发送（图片/语音/视频）+ 5种灵活回复模式！每组可独立配置文本梗段池 + 媒体池 + 回复模式，消息匹配到哪组就用哪组的配置回复，互不干扰。
 
 ---
 
@@ -19,7 +19,8 @@
 | 💬 **手动命令** | `/云原神` / `/cloudys` 从第一组随机回复 |
 | 🔧 **管理命令体系** | 丰富的 `group` 子命令管理多组：增删改查、命名、配置、媒体、模式 |
 | 🚫 **群聊黑/白名单** | 全局统一，所有组共享 |
-| 📥 **v3.x/v2.x 自动迁移** | 旧版 data.json 自动迁移到 v4.1 格式 |
+| 🔄 **面板配置实时生效** | 修改 AstrBot 面板配置后，重启插件或执行 `/云原神管理 configsync` 即可同步到默认组 |
+| 📥 **v2.x/v3.x 自动迁移** | 旧版 data.json 自动迁移到 v4.x 格式 |
 
 ---
 
@@ -87,6 +88,7 @@
 | `/云原神管理 blacklist remove <群号>` | 从名单移除 |
 | `/云原神管理 blacklist list` | 列出名单 |
 | `/云原神管理 status` | 查看全部状态 |
+| `/云原神管理 configsync` | 将面板配置同步到默认组 |
 
 ### 命令示例
 
@@ -112,18 +114,19 @@
 
 ## ⚙️ 配置说明
 
-AstrBot 管理面板的各个配置项 **仅在首次安装时作为初始值**。插件启动后保存到 `data.json` 的 `match_groups` 中，之后全部由 `/云原神管理 group` 命令操控，无需再碰面板。
+AstrBot 管理面板的各个配置项 **修改后重启插件或执行 `/云原神管理 configsync` 即可同步到默认组**。管理命令修改默认组时也会自动保存到 `data.json`，与面板配置保持双向同步。
 
 | 配置项 | 类型 | 说明 |
 |--------|------|------|
 | `enable_keyword_trigger` | bool | 主开关 |
-| `blacklist_mode` | string | 黑/白名单模式 |
-| `trigger_keywords` | list | 初始关键词（仅首次） |
-| `first_reply` | string | 初始首次回复词（仅首次） |
-| `reply_delay_ms` | int | 初始延迟（仅首次） |
-| `quote_pool` | list | 初始梗段库（仅首次） |
-| `reply_mode` | string | 初始回复模式（仅首次） |
-| `media_pool` | list | 初始媒体池（仅首次） |
+| `blacklist_mode` | string | 黑/白名单模式（blacklist/whitelist） |
+| `trigger_keywords` | list | 默认组 · 触发关键词 |
+| `first_reply` | string | 默认组 · 首次回复词 |
+| `reply_delay_ms` | int | 默认组 · 回复延迟（毫秒） |
+| `quote_pool` | list | 默认组 · 梗段词库 |
+| `reply_mode` | string | 默认组 · 回复模式（text/media/text_media/media_text/mixed） |
+| `media_pool` | list | 默认组 · 媒体池 |
+| `blacklist_groups` | list | 群聊黑/白名单列表 |
 
 ---
 
@@ -153,7 +156,7 @@ AstrBot 管理面板的各个配置项 **仅在首次安装时作为初始值**�
 |------|------|
 | `data/plugin_data/astrbot_plugin_cloud_genshin/data.json` | 统一持久化（match_groups + blacklist_groups） |
 
-所有管理命令修改即时保存，启动时自动加载。
+所有管理命令修改即时保存，启动时自动加载。面板配置通过 configsync 或重启插件同步到 data.json。
 
 ---
 
@@ -167,7 +170,7 @@ AstrBot 管理面板的各个配置项 **仅在首次安装时作为初始值**�
 
 - **插件名**: 好想玩云原神🎊
 - **作者**: 极夜System
-- **版本**: 4.1.0
+- **版本**: 4.2.0
 - **兼容**: AstrBot v3.5+
 - **分类**: 娱乐 / 梗
 
@@ -176,7 +179,7 @@ AstrBot 管理面板的各个配置项 **仅在首次安装时作为初始值**�
 ## ⚠️ 注意事项
 
 - 关键词自动触发只对非命令消息生效
-- **v2.x/v3.x 用户首次升级**：data.json 会自动迁移到 v4.1 的 `match_groups` 格式
+- **v2.x/v3.x 用户首次升级**：data.json 会自动迁移到 v4.x 的 `match_groups` 格式
 - 私聊不受黑/白名单影响
 - `enable_keyword_trigger` 关闭后自动触发全停，不影响手动命令
 
